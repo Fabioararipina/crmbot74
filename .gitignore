@@ -1,0 +1,46 @@
+# ── Credenciais — NUNCA commitar ──────────────────────────
+.env
+.env.local
+.env.production
+.env.*
+!.env.example
+
+# ── Dependências Node.js ───────────────────────────────────
+node_modules/
+conector/node_modules/
+
+# ── Banco de dados / Backups ───────────────────────────────
+*.sql
+*.sql.gz
+*.dump
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+
+# ── Documentação interna (contém IPs, senhas, contexto) ───
+MEMORY.md
+DEPLOY-PRODUCAO.md
+producao.md
+contexto.md
+crmcontexto.md
+details.md
+roteamento.md
+metas-vendedores-spec.md
+deploy-seguranca.sh
+
+# ── Sistema / Editor ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.tmp
+cls
+docker
+
+# ── PHP cache / Vtiger ────────────────────────────────────
+vtiger-modules/user_privileges/*.php
+vtiger-modules/tabdata.php
+cache/
+
+# ── Uploads / Mídia ───────────────────────────────────────
+uploads/

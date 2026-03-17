@@ -1,0 +1,56 @@
+services:
+  vtiger:
+    build: ./vtiger
+    ports:
+      - '8181:80'
+    environment:
+      - MYSQL_HOST=vtiger-db
+      - MYSQL_DATABASE=vtiger
+      - MYSQL_USER=vtiger
+      - MYSQL_PASSWORD=${VTIGER_DB_PASS}
+    depends_on:
+      - vtiger-db
+    volumes:
+      - vtiger_data:/var/www/html/storage
+      - ./vtiger-modules:/var/www/html/modules/custom
+      - ./vtiger-modules/config.inc.php:/var/www/html/config.inc.php
+      - ./vtiger-modules/user_privileges:/var/www/html/user_privileges
+      - ./vtiger-modules/Settings_ExtensionStore:/var/www/html/modules/Settings/ExtensionStore
+      - ./vtiger-modules/Leads_models_DetailView.php:/var/www/html/modules/Leads/models/DetailView.php
+      - ./vtiger-modules/Leads_views_Detail.php:/var/www/html/modules/Leads/views/Detail.php
+      - ./vtiger-modules/Users_Login_Action.php:/var/www/html/modules/Users/actions/Login.php
+      - ./vtiger-modules/Settings_Webforms:/var/www/html/modules/Settings/Webforms
+      - ./vtiger-modules/languages_pt_br:/var/www/html/languages/pt_br
+      - ./vtiger-modules/VTWebhookTask.inc:/var/www/html/modules/com_vtiger_workflow/tasks/VTWebhookTask.inc
+      - ./vtiger-modules/assets:/var/www/html/assets
+      - ./vtiger-modules/Users_Login.tpl:/var/www/html/layouts/v7/modules/Users/Login.tpl
+      - ./vtiger-modules/Footer.tpl:/var/www/html/layouts/v7/modules/Vtiger/Footer.tpl
+      - ./vtiger-modules/CompanyDetails_Settings.js:/var/www/html/layouts/v7/modules/Settings/Vtiger/resources/CompanyDetails.js
+      - ./vtiger-modules/module_MetasVendedores:/var/www/html/modules/MetasVendedores
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  vtiger-db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=vtiger
+      - MYSQL_USER=vtiger
+      - MYSQL_PASSWORD=${VTIGER_DB_PASS}
+      - MYSQL_ROOT_PASSWORD=${VTIGER_ROOT_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  vtiger_data:
+  mysql_data:
+  redis_data:
