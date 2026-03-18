@@ -120,6 +120,18 @@ $languageStrings = array(
 	'LBL_TOP'                      => 'Top'                         , // TODO: Review
 	'LBL_ALL_REPORTS'              => 'All Reports'                 , // TODO: Review
 	'LBL_CALCULATION_CONVERSION_MESSAGE' => 'Calculation are based on the base currency of your CRM', // TODO: Review
+	// Labels usados via $APP no template (PHP-side)
+	'LBL_DETAIL_REPORT'        => 'Relatório Detalhado',
+	'LBL_PIVOT_REPORT'         => 'Relatório Dinâmico',
+	'LBL_CHARTS'               => 'Gráficos',
+	'LBL_CHART_REPORT'         => 'Relatório de Gráfico',
+	'LBL_SHARE_REPORT'         => 'Compartilhar Relatório',
+	'LBL_SCHEDULE_REPORTS'     => 'Agendar Relatórios',
+	'LBL_RUN_REPORT'           => 'Executar Relatório',
+	'LBL_SHARED_REPORTS'       => 'Compartilhados Comigo',
+	'LBL_FILE_FORMAT'          => 'Formato do Arquivo',
+	'Report Type'              => 'Tipo de Relatório',
+	'LBL_SEARCH_FOR_FOLDERS'   => 'Pesquisar pastas',
 );
 $jsLanguageStrings = array(
 	'JS_DUPLICATE_RECORD'          => 'Duplicate Report'            , // TODO: Review
