@@ -1574,5 +1574,22 @@ $jsLanguageStrings = array(
 	'JS_PBX_OUTGOING_SUCCESS'=>'Pegue o aparelho de extensão para discar o número',
 	'JS_PBX_OUTGOING_FAILURE'=>'Ligação Perdida',
 	'JS_PBX_FILL_ALL_FIELDS'=>'Por favor, preencha todos os campos',
+	// Reports — labels usados via $APP no template
+	'LBL_SHARE_REPORT'         => 'Compartilhar Relatório',
+	'LBL_SCHEDULE_REPORTS'     => 'Agendar Relatórios',
+	'LBL_RUN_REPORT'           => 'Executar Relatório',
+	'LBL_DAILY'                => 'Diário',
+	'LBL_WEEKLY'               => 'Semanal',
+	'LBL_MONTHLY_BY_DATE'      => 'Mensal por Data',
+	'LBL_YEARLY'               => 'Anual',
+	'LBL_SPECIFIC_DATE'        => 'Em Data Específica',
+	'LBL_CHOOSE_DATE'          => 'Escolher Data',
+	'LBL_ON_THESE_DAYS'        => 'Nestes dias',
+	'LBL_SELECT_MONTH_AND_DAY' => 'Selecionar Mês e Data',
+	'LBL_SELECTED_DATES'       => 'Datas Selecionadas',
+	'LBL_AT_TIME'              => 'No horário',
+	'LBL_SELECT_RECIEPIENTS'   => 'Selecionar Destinatários',
+	'LBL_SPECIFIC_EMAIL_ADDRESS' => 'Enviar para e-mail específico',
+	'LBL_FILE_FORMAT'          => 'Formato do Arquivo',
 	// ends
 );
