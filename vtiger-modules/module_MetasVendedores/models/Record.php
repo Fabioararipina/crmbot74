@@ -56,8 +56,13 @@ class MetasVendedores_Record_Model {
                   {$whereTipo}
                   AND p.closingdate BETWEEN ? AND ?";
 
+        error_log("[MetasVendedores] OPR SQL: $sql | params: " . json_encode($params));
         $result = $adb->pquery($sql, $params);
-        $row    = $adb->raw_query_result_rowdata($result, 0);
+        if (!is_object($result)) {
+            error_log("[MetasVendedores] OPR query FAILED, result=" . gettype($result));
+            return ['qtd_realizada'=>0,'valor_realizado'=>0,'meta_quantidade'=>(int)$this->get('meta_quantidade'),'meta_valor'=>(float)$this->get('meta_valor'),'pct_quantidade'=>0,'pct_valor'=>0];
+        }
+        $row = $adb->raw_query_result_rowdata($result, 0);
 
         $qtdRealizada    = (int)   ($row['qtd']   ?? 0);
         $valorRealizado  = (float) ($row['valor']  ?? 0);
@@ -103,8 +108,11 @@ class MetasVendedores_Record_Model {
                         INNER JOIN vtiger_crmentity ce ON ce.crmid = ld.leadid
                         WHERE ce.deleted = 0 AND ld.lead_status = ? {$whereUser}
                           AND ce.createdtime BETWEEN ? AND ?";
+            error_log("[MetasVendedores] FUNIL-orig SQL: $sql | params: " . json_encode($params));
             $result  = $adb->pquery($sql, $params);
-            $totalOrigem = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
+            if (is_object($result)) {
+                $totalOrigem = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
+            }
         }
 
         if ($estagioDestino) {
@@ -114,8 +122,11 @@ class MetasVendedores_Record_Model {
                         INNER JOIN vtiger_crmentity ce ON ce.crmid = ld.leadid
                         WHERE ce.deleted = 0 AND ld.lead_status = ? {$whereUser}
                           AND ce.createdtime BETWEEN ? AND ?";
+            error_log("[MetasVendedores] FUNIL-dest SQL: $sql | params: " . json_encode($params));
             $result  = $adb->pquery($sql, $params);
-            $totalDestino = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
+            if (is_object($result)) {
+                $totalDestino = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
+            }
         }
 
         $taxaReal = $totalOrigem > 0 ? round($totalDestino / $totalOrigem * 100, 1) : 0;

@@ -29,10 +29,10 @@ class MetasVendedores_Picklist_Model {
 
         $values = [];
         if ($result) {
-            while ($row = $adb->fetch_array($result)) {
-                // vTiger armazena picklist values com HTML entities (ex: &ccedil; = ç)
-                // Decodificar para UTF-8 limpo antes de retornar
-                $values[] = html_entity_decode($row['valor'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $n = $adb->num_rows($result);
+            for ($i = 0; $i < $n; $i++) {
+                $row = $adb->raw_query_result_rowdata($result, $i);
+                $values[] = $row['valor'];
             }
         }
 
@@ -80,7 +80,9 @@ class MetasVendedores_Picklist_Model {
         );
         $equipes = [];
         if ($result) {
-            while ($row = $adb->fetch_array($result)) {
+            $n = $adb->num_rows($result);
+            for ($i = 0; $i < $n; $i++) {
+                $row = $adb->raw_query_result_rowdata($result, $i);
                 $equipes[] = ['id' => $row['groupid'], 'nome' => $row['groupname']];
             }
         }
@@ -114,7 +116,9 @@ class MetasVendedores_Picklist_Model {
 
         $vendedores = [];
         if ($result) {
-            while ($row = $adb->fetch_array($result)) {
+            $n = $adb->num_rows($result);
+            for ($i = 0; $i < $n; $i++) {
+                $row = $adb->raw_query_result_rowdata($result, $i);
                 $nome = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
                 if (empty($nome)) $nome = $row['user_name'];
                 $vendedores[] = ['id' => $row['id'], 'nome' => $nome];

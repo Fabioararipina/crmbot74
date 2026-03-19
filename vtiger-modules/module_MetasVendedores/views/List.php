@@ -100,23 +100,28 @@ class MetasVendedores_List_View extends Vtiger_Index_View {
                 <?php foreach ($metas as $meta): ?>
                     <?php
                     $secao = $meta->get('secao');
-                    if ($secao === 'oportunidades') {
-                        $prog = $meta->calcularProgressoOportunidades();
-                        $pctQtd   = $prog['pct_quantidade'];
-                        $pctValor = $prog['pct_valor'];
-                        $labelQtd   = $prog['qtd_realizada'] . ' / ' . $prog['meta_quantidade'];
-                        $labelValor = 'R$ ' . number_format($prog['valor_realizado'], 2, ',', '.') . ' / R$ ' . number_format($prog['meta_valor'], 2, ',', '.');
-                        $tipo = $meta->get('tipo_produto') ?: '—';
-                        $estagios = $meta->get('sales_stage_alvo') ?: 'Closed Won';
-                    } else {
-                        $prog = $meta->calcularProgressoFunil();
-                        $pctQtd   = $prog['pct_qtd'];
-                        $pctValor = $prog['pct_taxa'];
-                        $labelQtd   = $prog['total_destino'] . ' / ' . $prog['meta_qtd'] . ' leads';
-                        $labelValor = $prog['taxa_real'] . '% / meta: ' . $prog['meta_taxa'] . '%';
-                        $tipo = '—';
-                        $estagios = ($meta->get('estagio_origem') ?: '?') . ' → ' . ($meta->get('estagio_destino') ?: '?');
+                    try {
+                        if ($secao === 'oportunidades') {
+                            $prog = $meta->calcularProgressoOportunidades();
+                            $pctQtd   = $prog['pct_quantidade'];
+                            $pctValor = $prog['pct_valor'];
+                            $labelQtd   = $prog['qtd_realizada'] . ' / ' . $prog['meta_quantidade'];
+                            $labelValor = 'R$ ' . number_format($prog['valor_realizado'], 2, ',', '.') . ' / R$ ' . number_format($prog['meta_valor'], 2, ',', '.');
+                        } else {
+                            $prog = $meta->calcularProgressoFunil();
+                            $pctQtd   = $prog['pct_qtd'];
+                            $pctValor = $prog['pct_taxa'];
+                            $labelQtd   = $prog['total_destino'] . ' / ' . $prog['meta_qtd'] . ' leads';
+                            $labelValor = $prog['taxa_real'] . '% / meta: ' . $prog['meta_taxa'] . '%';
+                        }
+                    } catch (\Exception $e) {
+                        error_log("[MetasVendedores] List calc error id=" . $meta->get('id') . ": " . $e->getMessage());
+                        $pctQtd = 0; $pctValor = 0; $labelQtd = '—'; $labelValor = '—';
                     }
+                    $tipo = ($secao === 'oportunidades') ? ($meta->get('tipo_produto') ?: '—') : '—';
+                    $estagios = ($secao === 'oportunidades')
+                        ? ($meta->get('sales_stage_alvo') ?: 'Closed Won')
+                        : (($meta->get('estagio_origem') ?: '?') . ' → ' . ($meta->get('estagio_destino') ?: '?'));
                     ?>
                     <tr>
                         <td><a href="index.php?module=MetasVendedores&view=Detail&record=<?= $meta->get('id') ?>"><?= htmlspecialchars($meta->get('titulo')) ?></a></td>
