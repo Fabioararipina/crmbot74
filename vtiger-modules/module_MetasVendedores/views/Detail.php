@@ -8,7 +8,12 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
     public function checkPermission($request): bool { return true; }
 
     public function preProcess(Vtiger_Request $request, $display = true): void {
+        // MetasVendedores não usa vtiger_crmentity — limpa 'record' para evitar que o
+        // ModuleHeader.tpl tente carregar um entity record padrão (retornaria null e crasharia)
+        $recordId = $request->get('record');
+        $request->set('record', null);
         parent::preProcess($request, $display);
+        $request->set('record', $recordId);
     }
 
     public function process(Vtiger_Request $request): void {
