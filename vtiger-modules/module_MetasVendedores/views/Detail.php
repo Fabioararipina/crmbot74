@@ -8,12 +8,18 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
     public function checkPermission($request): bool { return true; }
 
     public function preProcess(Vtiger_Request $request, $display = true): void {
-        // MetasVendedores não usa vtiger_crmentity — limpa 'record' para evitar que o
-        // ModuleHeader.tpl tente carregar um entity record padrão (retornaria null e crasharia)
-        $recordId = $request->get('record');
-        $request->set('record', null);
         parent::preProcess($request, $display);
-        $request->set('record', $recordId);
+    }
+
+    public function preProcessDisplay(Vtiger_Request $request): void {
+        // ModuleHeader.tpl na linha 75 checa view=='Detail' e chama $RECORD->get('label')
+        // sem verificar null. MetasVendedores não usa vtiger_crmentity, então RECORD é null.
+        // Injetamos um objeto dummy com get() antes de renderizar o template.
+        $viewer = $this->getViewer($request);
+        $viewer->assign('RECORD', new class {
+            public function get($key) { return ''; }
+        });
+        parent::preProcessDisplay($request);
     }
 
     public function process(Vtiger_Request $request): void {
