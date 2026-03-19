@@ -26,7 +26,15 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
         require_once 'modules/MetasVendedores/models/Record.php';
 
         $id     = (int) $request->get('record');
-        $record = MetasVendedores_Record_Model::getById($id);
+        error_log("[MetasVendedores] Detail process id=$id");
+
+        try {
+            $record = MetasVendedores_Record_Model::getById($id);
+        } catch (\Exception $e) {
+            error_log("[MetasVendedores] getById FAILED: " . $e->getMessage());
+            throw $e;
+        }
+        error_log("[MetasVendedores] getById OK, record=" . ($record ? 'found' : 'null'));
 
         if (!$record) {
             echo '<div class="alert alert-danger mv-container">Meta não encontrada.</div>';
@@ -34,12 +42,19 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
         }
 
         $secao = $record->get('secao');
+        error_log("[MetasVendedores] secao=$secao, data=" . json_encode($record->getData()));
 
-        if ($secao === 'oportunidades') {
-            $prog = $record->calcularProgressoOportunidades();
-        } else {
-            $prog = $record->calcularProgressoFunil();
+        try {
+            if ($secao === 'oportunidades') {
+                $prog = $record->calcularProgressoOportunidades();
+            } else {
+                $prog = $record->calcularProgressoFunil();
+            }
+        } catch (\Exception $e) {
+            error_log("[MetasVendedores] calcular FAILED: " . $e->getMessage());
+            throw $e;
         }
+        error_log("[MetasVendedores] prog OK");
 
         // Calcular dias restantes
         $hoje  = new DateTime();
