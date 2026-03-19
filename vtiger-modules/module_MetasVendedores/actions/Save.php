@@ -32,7 +32,7 @@ class MetasVendedores_Save_Action extends Vtiger_Save_Action {
         if ($equipeId) {
             $adb = PearDatabase::getInstance();
             $r   = $adb->pquery("SELECT groupname FROM vtiger_groups WHERE groupid = ?", [$equipeId]);
-            $record->set('equipe_nome', $adb->num_rows($r) > 0 ? $adb->query_result($r, 0, 'groupname') : '');
+            $record->set('equipe_nome', $adb->num_rows($r) > 0 ? $adb->raw_query_result_rowdata($r, 0)['groupname'] : '');
         } else {
             $record->set('equipe_nome', '');
         }
@@ -44,7 +44,7 @@ class MetasVendedores_Save_Action extends Vtiger_Save_Action {
             $adb = PearDatabase::getInstance();
             $r   = $adb->pquery("SELECT first_name, last_name, user_name FROM vtiger_users WHERE id = ?", [$usuarioId]);
             if ($adb->num_rows($r) > 0) {
-                $row  = $adb->query_result_rowdata($r, 0);
+                $row  = $adb->raw_query_result_rowdata($r, 0);
                 $nome = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
                 $record->set('usuario_nome', $nome ?: $row['user_name']);
             }
