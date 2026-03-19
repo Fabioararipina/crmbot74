@@ -13,6 +13,12 @@ class MetasVendedores_Delete_Action extends Vtiger_Action_Controller {
     }
 
     public function process(Vtiger_Request $request): void {
+        // Somente admin pode excluir metas
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        if ($currentUser->get('is_admin') !== 'on') {
+            header('Location: index.php?module=MetasVendedores&view=List');
+            exit;
+        }
         require_once 'modules/MetasVendedores/models/Record.php';
 
         $id     = (int) $request->get('record');

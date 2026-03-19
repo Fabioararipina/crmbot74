@@ -13,6 +13,12 @@ class MetasVendedores_Save_Action extends Vtiger_Save_Action {
     }
 
     public function process(Vtiger_Request $request): void {
+        // Somente admin pode salvar metas
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        if ($currentUser->get('is_admin') !== 'on') {
+            header('Location: index.php?module=MetasVendedores&view=List');
+            exit;
+        }
         require_once 'modules/MetasVendedores/models/Record.php';
         require_once 'modules/MetasVendedores/models/Picklist.php';
 

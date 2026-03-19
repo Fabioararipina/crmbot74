@@ -32,6 +32,9 @@ class MetasVendedores_Dashboard_View extends Vtiger_Index_View {
         $consolidado = MetasVendedores_Record_Model::getConsolidado($filters);
         $equipes     = MetasVendedores_Picklist_Model::getEquipes();
 
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        $isAdmin = ($currentUser->get('is_admin') === 'on');
+
         echo $this->_css();
         ?>
         <div class="mv-container">
@@ -70,8 +73,10 @@ class MetasVendedores_Dashboard_View extends Vtiger_Index_View {
                         <button type="submit" class="btn btn-sm btn-default"><i class="fa fa-search"></i> Atualizar</button>
                         &nbsp;
                         <a href="index.php?module=MetasVendedores&view=List&fi=<?= $fi ?>&ff=<?= $ff ?>" class="btn btn-sm btn-default"><i class="fa fa-list"></i> Lista</a>
+                        <?php if ($isAdmin): ?>
                         &nbsp;
                         <a href="index.php?module=MetasVendedores&view=Edit" class="btn btn-sm btn-success"><i class="fa fa-plus"></i> Nova Meta</a>
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -193,7 +198,9 @@ class MetasVendedores_Dashboard_View extends Vtiger_Index_View {
 
                                                 <div class="col-md-1 mv-meta-acoes">
                                                     <a href="index.php?module=MetasVendedores&view=Detail&record=<?= $meta['id'] ?>" title="Ver"><i class="fa fa-eye"></i></a>
+                                                    <?php if ($isAdmin): ?>
                                                     <a href="index.php?module=MetasVendedores&view=Edit&record=<?= $meta['id'] ?>"   title="Editar"><i class="fa fa-pencil"></i></a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>

@@ -30,6 +30,9 @@ class MetasVendedores_List_View extends Vtiger_Index_View {
         $ff = $filters['periodo_fim'];
         $secaoFiltro = $filters['secao'];
 
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        $isAdmin = ($currentUser->get('is_admin') === 'on');
+
         echo $this->_css();
         ?>
         <div class="mv-container">
@@ -70,8 +73,10 @@ class MetasVendedores_List_View extends Vtiger_Index_View {
                         </div>
 
                         <button type="submit" class="btn btn-sm btn-default"><i class="fa fa-filter"></i> Filtrar</button>
+                        <?php if ($isAdmin): ?>
                         &nbsp;
                         <a href="index.php?module=MetasVendedores&view=Edit" class="btn btn-sm btn-success"><i class="fa fa-plus"></i> Nova Meta</a>
+                        <?php endif; ?>
                         &nbsp;
                         <a href="index.php?module=MetasVendedores&view=Dashboard&fi=<?= $fi ?>&ff=<?= $ff ?>" class="btn btn-sm btn-primary"><i class="fa fa-bar-chart"></i> Dashboard</a>
                     </form>
@@ -93,7 +98,7 @@ class MetasVendedores_List_View extends Vtiger_Index_View {
                         <th>Período</th>
                         <th style="width:200px">Progresso Quantidade</th>
                         <th style="width:200px">Progresso Valor / Taxa</th>
-                        <th>Ações</th>
+                        <?php if ($isAdmin): ?><th>Ações</th><?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,12 +143,14 @@ class MetasVendedores_List_View extends Vtiger_Index_View {
                             <?= $this->_progressBar($pctValor) ?>
                             <small class="mv-label"><?= htmlspecialchars($labelValor) ?></small>
                         </td>
+                        <?php if ($isAdmin): ?>
                         <td class="mv-actions">
                             <a href="index.php?module=MetasVendedores&view=Detail&record=<?= $meta->get('id') ?>" title="Ver"><i class="fa fa-eye"></i></a>
                             <a href="index.php?module=MetasVendedores&view=Edit&record=<?= $meta->get('id') ?>" title="Editar"><i class="fa fa-pencil"></i></a>
                             <a href="index.php?module=MetasVendedores&action=Delete&record=<?= $meta->get('id') ?>"
                                onclick="return confirm('Excluir esta meta?')" title="Excluir"><i class="fa fa-trash text-danger"></i></a>
                         </td>
+                        <?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

@@ -66,6 +66,9 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
         $diasRestantes = max(0, $hoje->diff($fim)->days * ($hoje <= $fim ? 1 : -1));
         $periodoFinalizado = $hoje > $fim;
 
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        $isAdmin = ($currentUser->get('is_admin') === 'on');
+
         echo $this->_css();
         ?>
         <div class="mv-container">
@@ -77,6 +80,7 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
                     &nbsp;
                     <a href="index.php?module=MetasVendedores&view=Dashboard" class="btn btn-default btn-sm"><i class="fa fa-bar-chart"></i> Dashboard</a>
                 </div>
+                <?php if ($isAdmin): ?>
                 <div class="pull-right">
                     <a href="index.php?module=MetasVendedores&view=Edit&record=<?= $id ?>" class="btn btn-warning btn-sm"><i class="fa fa-pencil"></i> Editar</a>
                     &nbsp;
@@ -84,6 +88,7 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
                        onclick="return confirm('Excluir esta meta permanentemente?')"
                        class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Excluir</a>
                 </div>
+                <?php endif; ?>
             </div>
 
             <!-- Cabeçalho da Meta -->

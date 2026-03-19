@@ -13,6 +13,15 @@ class MetasVendedores_Edit_View extends Vtiger_Index_View {
     }
 
     public function process(Vtiger_Request $request): void {
+        // Somente admin pode criar/editar metas
+        $currentUser = Users_Record_Model::getCurrentUserModel();
+        if ($currentUser->get('is_admin') !== 'on') {
+            echo '<div style="padding:30px"><div class="alert alert-warning">
+                <i class="fa fa-lock"></i> <b>Acesso restrito.</b> Apenas administradores podem criar/editar metas.
+                <br><br><a href="index.php?module=MetasVendedores&view=List" class="btn btn-default">Voltar à lista</a>
+            </div></div>';
+            return;
+        }
         require_once 'modules/MetasVendedores/models/Record.php';
         require_once 'modules/MetasVendedores/models/Picklist.php';
 
