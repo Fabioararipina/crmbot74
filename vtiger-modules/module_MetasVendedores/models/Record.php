@@ -41,7 +41,7 @@ class MetasVendedores_Record_Model {
 
         $whereTipo = '';
         if ($tipoProduto) {
-            $whereTipo = " AND p.type = ?";
+            $whereTipo = " AND p.potentialtype = ?";
             $params[]  = $tipoProduto;
         }
 
