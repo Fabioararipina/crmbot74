@@ -13,10 +13,11 @@ class MetasVendedores_Module_Model extends Vtiger_Module_Model {
     }
 
     public function isActive(): bool {
+        // vTiger: presence=0 significa ATIVO, presence=1 significa INATIVO
         $adb = PearDatabase::getInstance();
         $r   = $adb->pquery("SELECT presence FROM vtiger_tab WHERE name = 'MetasVendedores'", []);
         if ($adb->num_rows($r) > 0) {
-            return (int)$adb->query_result($r, 0, 'presence') === 1;
+            return (int)$adb->query_result($r, 0, 'presence') === 0;
         }
         return false;
     }
