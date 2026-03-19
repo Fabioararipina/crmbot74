@@ -52,9 +52,13 @@ class MetasVendedores_Detail_View extends Vtiger_Index_View {
             }
         } catch (\Exception $e) {
             error_log("[MetasVendedores] calcular FAILED: " . $e->getMessage());
-            throw $e;
+            // Fallback: retornar zeros para a página carregar mesmo com erro no cálculo
+            if ($secao === 'oportunidades') {
+                $prog = ['qtd_realizada'=>0,'valor_realizado'=>0,'meta_quantidade'=>(int)$record->get('meta_quantidade'),'meta_valor'=>(float)$record->get('meta_valor'),'pct_quantidade'=>0,'pct_valor'=>0];
+            } else {
+                $prog = ['total_origem'=>0,'total_destino'=>0,'taxa_real'=>0,'meta_taxa'=>(float)$record->get('meta_taxa_conversao'),'meta_qtd'=>(int)$record->get('meta_quantidade_funil'),'pct_taxa'=>0,'pct_qtd'=>0];
+            }
         }
-        error_log("[MetasVendedores] prog OK");
 
         // Calcular dias restantes
         $hoje  = new DateTime();

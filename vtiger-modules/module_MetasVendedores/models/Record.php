@@ -57,7 +57,7 @@ class MetasVendedores_Record_Model {
                   AND p.closingdate BETWEEN ? AND ?";
 
         $result = $adb->pquery($sql, $params);
-        $row    = $adb->query_result_rowdata($result, 0);
+        $row    = $adb->raw_query_result_rowdata($result, 0);
 
         $qtdRealizada    = (int)   ($row['qtd']   ?? 0);
         $valorRealizado  = (float) ($row['valor']  ?? 0);
@@ -104,7 +104,7 @@ class MetasVendedores_Record_Model {
                         WHERE ce.deleted = 0 AND ld.lead_status = ? {$whereUser}
                           AND ce.createdtime BETWEEN ? AND ?";
             $result  = $adb->pquery($sql, $params);
-            $totalOrigem = (int)($adb->query_result_rowdata($result, 0)['total'] ?? 0);
+            $totalOrigem = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
         }
 
         if ($estagioDestino) {
@@ -115,7 +115,7 @@ class MetasVendedores_Record_Model {
                         WHERE ce.deleted = 0 AND ld.lead_status = ? {$whereUser}
                           AND ce.createdtime BETWEEN ? AND ?";
             $result  = $adb->pquery($sql, $params);
-            $totalDestino = (int)($adb->query_result_rowdata($result, 0)['total'] ?? 0);
+            $totalDestino = (int)($adb->raw_query_result_rowdata($result, 0)['total'] ?? 0);
         }
 
         $taxaReal = $totalOrigem > 0 ? round($totalDestino / $totalOrigem * 100, 1) : 0;
@@ -153,9 +153,10 @@ class MetasVendedores_Record_Model {
         $result = $adb->pquery($sql, $params);
 
         $metas = [];
-        while ($row = $adb->fetch_array($result)) {
+        $rows  = $adb->num_rows($result);
+        for ($i = 0; $i < $rows; $i++) {
             $m       = new self();
-            $m->data = $row;
+            $m->data = $adb->raw_query_result_rowdata($result, $i);
             $metas[] = $m;
         }
         return $metas;
@@ -168,7 +169,7 @@ class MetasVendedores_Record_Model {
         );
         if ($adb->num_rows($result) > 0) {
             $m       = new self();
-            $m->data = $adb->query_result_rowdata($result, 0);
+            $m->data = $adb->raw_query_result_rowdata($result, 0);
             return $m;
         }
         return null;
