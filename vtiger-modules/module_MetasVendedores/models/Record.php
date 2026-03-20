@@ -296,7 +296,7 @@ class MetasVendedores_Record_Model {
         }
         if ($equipeId) {
             return [
-                " AND ce.smownerid IN (SELECT userid FROM vtiger_group2users WHERE groupid = ?)",
+                " AND ce.smownerid IN (SELECT userid FROM vtiger_users2group WHERE groupid = ?)",
                 [$equipeId],
             ];
         }
