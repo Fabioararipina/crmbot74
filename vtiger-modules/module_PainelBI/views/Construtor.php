@@ -116,6 +116,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                         <option value="summary"    <?= $tipo === 'summary'    ? 'selected' : '' ?>>Resumo (agrupado)</option>
                         <option value="detail"     <?= $tipo === 'detail'     ? 'selected' : '' ?>>Detalhado (linhas)</option>
                         <option value="conversion" <?= $tipo === 'conversion' ? 'selected' : '' ?>>Taxa de Conversão</option>
+                        <option value="vendas"     <?= $tipo === 'vendas'     ? 'selected' : '' ?>>Leads vs Vendas</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -397,9 +398,9 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
             document.getElementById('pbi-sec-colunas').style.display = tipo === 'detail' ? '' : 'none';
             // Conversão: esconder seção de agregações (são calculadas automaticamente)
             var aggSec = document.getElementById('pbi-sec-agregacoes');
-            if (aggSec) aggSec.style.display = tipo === 'conversion' ? 'none' : '';
-            // Conversão: só disponível para Leads
-            if (tipo === 'conversion') {
+            if (aggSec) aggSec.style.display = (tipo === 'conversion' || tipo === 'vendas') ? 'none' : '';
+            // Conversão e Vendas: só disponível para Leads
+            if (tipo === 'conversion' || tipo === 'vendas') {
                 document.getElementById('pbi-modulo').value = 'Leads';
                 pbiModuloChanged();
             }
@@ -623,6 +624,27 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                         tipo: document.getElementById('pbi-chart-tipo').value || 'bar',
                         campo_label: 'grupo',
                         campos_dados: ['total', 'convertidos'],
+                        mostrar_grid:    !!parseInt(document.getElementById('pbi-opt-grid').value),
+                        mostrar_label:   !!parseInt(document.getElementById('pbi-opt-label').value),
+                        mostrar_legenda: !!parseInt(document.getElementById('pbi-opt-legenda').value),
+                        posicao_legenda: document.getElementById('pbi-legend-pos').value,
+                    }
+                };
+            }
+            // Para tipo vendas
+            if (tipo === 'vendas') {
+                return {
+                    modulo_base: 'Leads',
+                    tipo: 'vendas',
+                    grupo: grupo || 'user_name',
+                    estagio_vencido: 'Vencido',
+                    condicoes_grupos: condGrupos,
+                    ordem_dir: document.getElementById('pbi-ordem-dir').value || 'DESC',
+                    limite: parseInt(document.getElementById('pbi-limite').value) || 500,
+                    chart: {
+                        tipo: document.getElementById('pbi-chart-tipo').value || 'bar',
+                        campo_label: 'grupo',
+                        campos_dados: ['total_leads', 'convertidos', 'vendas'],
                         mostrar_grid:    !!parseInt(document.getElementById('pbi-opt-grid').value),
                         mostrar_label:   !!parseInt(document.getElementById('pbi-opt-label').value),
                         mostrar_legenda: !!parseInt(document.getElementById('pbi-opt-legenda').value),

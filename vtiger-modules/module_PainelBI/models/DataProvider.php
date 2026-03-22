@@ -167,6 +167,9 @@ class PainelBI_DataProvider_Model {
         if ($tipo === 'conversion') {
             return $this->runConversionReport($config);
         }
+        if ($tipo === 'vendas') {
+            return $this->runVendasReport($config);
+        }
 
         $colDefault= $modulo === 'Potentials' ? ['potentialname','sales_stage','amount','atendente','createdtime'] : ['nome_completo','leadstatus','atendente','createdtime'];
         $colunas   = $config['colunas'] ?? $colDefault;
@@ -330,6 +333,89 @@ class PainelBI_DataProvider_Model {
             'tipo'    => 'conversion',
             'chaves'  => ['grupo', 'total', 'convertidos', 'nao_convertidos', 'taxa_conversao'],
             'labels'  => [$grupoLabel, 'Total Leads', 'Convertidos', 'Não Convertidos', 'Taxa (%)'],
+            'dados'   => $rows,
+            'totais'  => $totalRow,
+            'total'   => count($rows),
+            'sql_debug' => $sql,
+        ];
+    }
+
+    // ─── Relatório de vendas (leads → oportunidades ganhas) ──────────────────
+
+    private function runVendasReport(array $config): array {
+        $grupo      = $config['grupo'] ?? 'user_name';
+        $condGrupos = $config['condicoes_grupos'] ?? [];
+        $ordemDir   = strtoupper($config['ordem_dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+        $limite     = min(max((int)($config['limite'] ?? 500), 1), 5000);
+        $estagio    = $config['estagio_vencido'] ?? 'Vencido';
+
+        $fields = self::getLeadsFields();
+        $params = [];
+
+        if (!isset($fields[$grupo])) {
+            $grupo = 'user_name';
+        }
+        $f = $fields[$grupo];
+        $grupoSQL   = $f['sql_s'];
+        $grupoW     = $f['sql_w'];
+        $grupoLabel = $f['label'];
+
+        // FROM: leads + rastreamento (contactscf) + contato + oportunidade
+        $from = "FROM vtiger_leaddetails ld
+        JOIN vtiger_crmentity e ON e.crmid = ld.leadid
+            AND e.setype = 'Leads'
+            AND e.deleted = 0
+        LEFT JOIN vtiger_leadaddress la ON la.leadaddressid = ld.leadid
+        LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0
+        LEFT JOIN vtiger_contactscf cscf
+            ON cscf.cf_origem_lead_id = CAST(ld.leadid AS CHAR)
+            AND cscf.cf_origem_lead_id IS NOT NULL
+            AND cscf.cf_origem_lead_id != ''
+        LEFT JOIN vtiger_contactdetails cd ON cd.contactid = cscf.contactid
+        LEFT JOIN vtiger_potential p ON p.contact_id = cd.contactid
+        LEFT JOIN vtiger_crmentity ep ON ep.crmid = p.potentialid AND ep.deleted = 0";
+
+        $condSQL = $this->buildConditionsSQL($condGrupos, $fields, $params);
+
+        $params_venc = $params;
+        $params_venc[] = $estagio;
+
+        $sql = "SELECT
+            {$grupoSQL} AS `grupo`,
+            COUNT(DISTINCT ld.leadid) AS `total_leads`,
+            COUNT(DISTINCT CASE WHEN cscf.contactid IS NOT NULL THEN ld.leadid END) AS `convertidos`,
+            COUNT(DISTINCT CASE WHEN p.potentialid IS NOT NULL THEN p.potentialid END) AS `total_opps`,
+            COUNT(DISTINCT CASE WHEN p.sales_stage = ? THEN p.potentialid END) AS `vendas`,
+            ROUND(COUNT(DISTINCT CASE WHEN p.sales_stage = ? THEN p.potentialid END) * 100.0 / GREATEST(COUNT(DISTINCT ld.leadid), 1), 1) AS `taxa_vendas`
+        {$from}
+        {$condSQL}
+        GROUP BY {$grupoW}
+        ORDER BY `vendas` {$ordemDir}
+        LIMIT {$limite}";
+
+        $params_query = array_merge([$estagio, $estagio], $params);
+        $result = $this->adb->pquery($sql, $params_query);
+        $rows = [];
+        while ($row = $this->adb->fetch_array($result)) {
+            $rows[] = self::decodeRow($row);
+        }
+
+        // Totais
+        $sqlTotal = "SELECT
+            COUNT(DISTINCT ld.leadid) AS `total_leads`,
+            COUNT(DISTINCT CASE WHEN cscf.contactid IS NOT NULL THEN ld.leadid END) AS `convertidos`,
+            COUNT(DISTINCT CASE WHEN p.potentialid IS NOT NULL THEN p.potentialid END) AS `total_opps`,
+            COUNT(DISTINCT CASE WHEN p.sales_stage = ? THEN p.potentialid END) AS `vendas`,
+            ROUND(COUNT(DISTINCT CASE WHEN p.sales_stage = ? THEN p.potentialid END) * 100.0 / GREATEST(COUNT(DISTINCT ld.leadid), 1), 1) AS `taxa_vendas`
+        {$from}
+        {$condSQL}";
+
+        $totalRow = self::decodeRow($this->adb->fetch_array($this->adb->pquery($sqlTotal, $params_query)));
+
+        return [
+            'tipo'    => 'vendas',
+            'chaves'  => ['grupo', 'total_leads', 'convertidos', 'total_opps', 'vendas', 'taxa_vendas'],
+            'labels'  => [$grupoLabel, 'Total Leads', 'Convertidos', 'Total Opps', 'Vendas (Vencido)', 'Taxa Vendas (%)'],
             'dados'   => $rows,
             'totais'  => $totalRow,
             'total'   => count($rows),

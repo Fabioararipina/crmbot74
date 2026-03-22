@@ -306,10 +306,12 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                         <?php foreach ($data['chaves'] as $i => $chave): ?>
                             <td><?php
                                 $v = $row[$chave] ?? ($vals[$i] ?? '');
-                                if ($chave === 'taxa_conversao') {
+                                if ($chave === 'taxa_conversao' || $chave === 'taxa_vendas') {
                                     $pct = (float)$v;
                                     $color = $pct >= 20 ? '#27ae60' : ($pct >= 10 ? '#f39c12' : '#e74c3c');
                                     echo '<span style="font-weight:700;color:'.$color.'">' . pbi_e($v) . '%</span>';
+                                } elseif ($chave === 'vendas') {
+                                    echo '<span style="font-weight:700;color:#27ae60">' . pbi_e($v) . '</span>';
                                 } else {
                                     echo pbi_e($v);
                                 }
@@ -321,7 +323,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                     <tr style="font-weight:700;background:#f0f7ff;border-top:2px solid #3498db">
                         <td><b>TOTAL</b></td>
                         <?php foreach (array_slice($data['chaves'], 1) as $chave): ?>
-                            <td><?= pbi_e($data['totais'][$chave] ?? '') ?><?= $chave === 'taxa_conversao' ? '%' : '' ?></td>
+                            <td><?= pbi_e($data['totais'][$chave] ?? '') ?><?= in_array($chave, ['taxa_conversao','taxa_vendas']) ? '%' : '' ?></td>
                         <?php endforeach; ?>
                     </tr>
                     <?php endif; ?>
