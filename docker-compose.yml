@@ -27,6 +27,7 @@ services:
       - ./vtiger-modules/Footer.tpl:/var/www/html/layouts/v7/modules/Vtiger/Footer.tpl
       - ./vtiger-modules/CompanyDetails_Settings.js:/var/www/html/layouts/v7/modules/Settings/Vtiger/resources/CompanyDetails.js
       - ./vtiger-modules/module_MetasVendedores:/var/www/html/modules/MetasVendedores
+      - ./vtiger-modules/module_PainelBI:/var/www/html/modules/PainelBI
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
