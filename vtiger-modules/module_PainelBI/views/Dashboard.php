@@ -181,13 +181,14 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                                 window._pbiCharts = window._pbiCharts || [];
                                 window._pbiCharts.push({
                                     id: 'chart-<?= $widgetId ?>',
-                                    data: <?= json_encode($chartData, JSON_UNESCAPED_UNICODE) ?>
+                                    data: <?= json_encode($chartData, JSON_UNESCAPED_UNICODE) ?>,
+                                    grupo: <?= json_encode($config['grupo'] ?? '', JSON_UNESCAPED_UNICODE) ?>
                                 });
                                 </script>
                             <?php endif; ?>
 
                             <?php if (in_array($chartConfig['tipo'] ?? '', ['none']) || $largura === 12): ?>
-                                <?php $this->_renderTable($data, $chartConfig['tipo'] ?? 'none', $relId); ?>
+                                <?php $this->_renderTable($data, $chartConfig['tipo'] ?? 'none', $relId, $config['grupo'] ?? ''); ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -273,7 +274,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
 
     // ─── Render table ─────────────────────────────────────────────────────────
 
-    private function _renderTable(array $data, string $chartTipo = 'bar', int $relId = 0): void {
+    private function _renderTable(array $data, string $chartTipo = 'bar', int $relId = 0, string $grupo = ''): void {
         if (empty($data['dados'])) {
             echo '<p class="text-muted text-center" style="margin:10px 0"><small>Sem dados</small></p>';
             return;
@@ -291,8 +292,9 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 <tbody>
                     <?php foreach ($rows as $row):
                         $vals = array_values($row);
+                        $drillVal = $grupo ? ($row[$grupo] ?? ($vals[0] ?? '')) : '';
                     ?>
-                    <tr>
+                    <tr<?php if ($grupo): ?> style="cursor:pointer" onclick="pbiDrillDown(<?= htmlspecialchars(json_encode($grupo), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($drillVal), ENT_QUOTES) ?>)"<?php endif; ?>>
                         <?php foreach ($data['chaves'] as $i => $chave): ?>
                             <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
                         <?php endforeach; ?>
@@ -370,6 +372,28 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
     private function _chartScript(int $boardId, int $tabId): void { ?>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script>
+        // Mapeamento campo PainelBI → campo de busca vTiger
+        var _pbiFieldMap = {
+            'leadstatus': 'leadstatus', 'leadsource': 'leadsource',
+            'user_name': 'assigned_user_id', 'data_criacao': 'createdtime',
+            'mes_criacao': 'createdtime', 'semana_criacao': 'createdtime',
+            'firstname': 'firstname', 'lastname': 'lastname',
+            'company': 'company', 'email': 'email', 'phone': 'phone'
+        };
+
+        function pbiDrillDown(grupo, label) {
+            if (!grupo || !label) return;
+            var searchKey = _pbiFieldMap[grupo] || grupo;
+            var op = 'e'; // equals
+            var val = label;
+            // Campos de data/tempo não fazem drill-down simples
+            if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime'].indexOf(grupo) >= 0) return;
+            // "(sem status)" ou "(sem valor)" → buscar vazio
+            if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; op = 'e'; }
+            window.location.href = 'index.php?module=Leads&view=List&search_key=' +
+                encodeURIComponent(searchKey) + '&search_value=' + encodeURIComponent(val) + '&operator=' + op;
+        }
+
         // Inicializa todos os gráficos registrados
         document.addEventListener('DOMContentLoaded', function() {
             (window._pbiCharts || []).forEach(function(cfg) {
@@ -377,7 +401,8 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 if (!canvas) return;
                 var d = cfg.data;
                 var opts = d.options || {};
-                new Chart(canvas, {
+                var grupo = cfg.grupo || '';
+                var chart = new Chart(canvas, {
                     type: d.tipo,
                     data: { labels: d.labels, datasets: d.datasets },
                     options: {
@@ -390,9 +415,23 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                         scales: d.tipo === 'pie' || d.tipo === 'doughnut' ? {} : {
                             x: { grid: { display: !!opts.mostrar_grid } },
                             y: { grid: { display: !!opts.mostrar_grid }, beginAtZero: true }
+                        },
+                        onClick: function(evt, elements) {
+                            if (!elements.length || !grupo) return;
+                            var idx = elements[0].index;
+                            var label = d.labels[idx];
+                            pbiDrillDown(grupo, label);
                         }
                     }
                 });
+                // Cursor pointer ao passar sobre elementos clicáveis
+                if (grupo) {
+                    canvas.style.cursor = 'default';
+                    canvas.addEventListener('mousemove', function(e) {
+                        var pts = chart.getElementsAtEventForMode(e, 'nearest', {intersect: true}, false);
+                        canvas.style.cursor = pts.length ? 'pointer' : 'default';
+                    });
+                }
             });
         });
 
