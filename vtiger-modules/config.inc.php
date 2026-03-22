@@ -29,6 +29,13 @@ $dbconfigoption['ssl'] = false;
 $host_name = $dbconfig['db_hostname'];
 
 $site_URL = 'https://crm.bot74.com.br';
+
+// Suporte a proxy reverso com SSL termination (Nginx/Caddy/Cloudflare)
+if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+} elseif (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') {
+    $_SERVER['HTTPS'] = 'on';
+}
 $root_directory = '/var/www/html/';
 $cache_dir = 'cache/';
 $tmp_dir = 'cache/images/';
