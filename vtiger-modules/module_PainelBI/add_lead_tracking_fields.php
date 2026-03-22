@@ -114,13 +114,13 @@ if (isset($existentes['cf_origem_lead_id'])) {
 }
 
 // ── 5. Configurar mapeamento vtiger_convertleadmapping ─────────────────────
-$r = $db->query("SELECT id FROM vtiger_convertleadmapping WHERE leadfieldid={$leadFieldId}");
+$r = $db->query("SELECT cfmid FROM vtiger_convertleadmapping WHERE leadfid={$leadFieldId}");
 if ($r->num_rows > 0) {
-    $db->query("UPDATE vtiger_convertleadmapping SET contactfieldid={$contactFieldId} WHERE leadfieldid={$leadFieldId}");
+    $db->query("UPDATE vtiger_convertleadmapping SET contactfid={$contactFieldId} WHERE leadfid={$leadFieldId}");
     echo "[MAPPING] Mapeamento atualizado: lead.{$leadFieldId} -> contact.{$contactFieldId}\n";
 } else {
-    $db->query("INSERT INTO vtiger_convertleadmapping (leadfieldid, contactfieldid, accountfieldid, potentialfieldid)
-        VALUES ({$leadFieldId}, {$contactFieldId}, NULL, NULL)");
+    $db->query("INSERT INTO vtiger_convertleadmapping (leadfid, contactfid, accountfid, potentialfid, editable)
+        VALUES ({$leadFieldId}, {$contactFieldId}, NULL, NULL, 1)");
     echo "[MAPPING] Mapeamento criado: lead.{$leadFieldId} -> contact.{$contactFieldId}\n";
 }
 
