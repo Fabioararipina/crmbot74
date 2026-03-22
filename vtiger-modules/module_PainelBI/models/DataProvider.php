@@ -284,7 +284,15 @@ class PainelBI_DataProvider_Model {
         $grupoW    = $f['sql_w'];
         $grupoLabel = $f['label'];
 
-        $from = $this->getLeadsFrom();
+        // Para conversão usamos FROM especial: inclui leads convertidos (deleted=1)
+        // pois o vTiger marca deleted=1 ao converter um lead via "Converter Lead"
+        $from = "FROM vtiger_leaddetails ld
+        JOIN vtiger_crmentity e ON e.crmid = ld.leadid
+            AND e.setype = 'Leads'
+            AND (e.deleted = 0 OR ld.converted = 1)
+        LEFT JOIN vtiger_leadaddress la ON la.leadaddressid = ld.leadid
+        LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0";
+
         $condSQL = $this->buildConditionsSQL($condGrupos, $fields, $params);
 
         $sql = "SELECT
