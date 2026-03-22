@@ -38,6 +38,9 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
         $data      = $dp->runReport($config);
         $chartData = PainelBI_DataProvider_Model::prepareChartData($chartConfig, $data);
 
+        // cvid da view "Todos" para drill-down
+        $allViewId = $dp->getAllViewId('Leads');
+
         // Informações de condições para exibição
         $condGrupos = $config['condicoes_grupos'] ?? [];
         $chartTypes = PainelBI_DataProvider_Model::getChartTypes();
@@ -242,14 +245,17 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
             'firstname': 'firstname', 'lastname': 'lastname',
             'email': 'email', 'phone': 'phone'
         };
+        var _pbiAllViewId = <?= (int)$allViewId ?>;
         function pbiDrillDown(grupo, label) {
             if (!grupo || !label) return;
             var searchKey = _pbiFieldMap[grupo] || grupo;
             if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime'].indexOf(grupo) >= 0) return;
             var val = label;
             if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; }
-            window.location.href = 'index.php?module=Leads&view=List&search_key=' +
-                encodeURIComponent(searchKey) + '&search_value=' + encodeURIComponent(val) + '&operator=e';
+            var params = JSON.stringify([[[searchKey, 'e', val]]]);
+            var url = 'index.php?module=Leads&view=List&search_params=' + encodeURIComponent(params);
+            if (_pbiAllViewId) url += '&viewname=' + _pbiAllViewId;
+            window.location.href = url;
         }
         </script>
 

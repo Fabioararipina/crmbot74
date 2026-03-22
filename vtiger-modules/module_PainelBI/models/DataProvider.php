@@ -560,4 +560,14 @@ class PainelBI_DataProvider_Model {
             ],
         ];
     }
+
+    // ─── Utilitários ────────────────────────────────────────────────────────
+
+    /** Retorna o cvid da CustomView "All" para um módulo (drill-down) */
+    public function getAllViewId(string $module = 'Leads'): int {
+        $row = $this->adb->fetch_array(
+            $this->adb->pquery("SELECT cvid FROM vtiger_customview WHERE entitytype=? AND viewname='All' LIMIT 1", [$module])
+        );
+        return $row ? (int)$row['cvid'] : 0;
+    }
 }

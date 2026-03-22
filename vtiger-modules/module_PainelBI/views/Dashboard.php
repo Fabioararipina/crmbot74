@@ -41,6 +41,9 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
         // Relatórios disponíveis para "Add Widget"
         $relatorios = $dp->getRelatorios();
 
+        // cvid da view "Todos" para drill-down
+        $allViewId = $dp->getAllViewId('Leads');
+
         // Separar boards por tipo
         $myBoards     = array_filter($boards, fn($b) => !$b['compartilhado']);
         $sharedBoards = array_filter($boards, fn($b) => $b['compartilhado']);
@@ -380,18 +383,20 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
             'firstname': 'firstname', 'lastname': 'lastname',
             'company': 'company', 'email': 'email', 'phone': 'phone'
         };
+        var _pbiAllViewId = <?= (int)$allViewId ?>;
 
         function pbiDrillDown(grupo, label) {
             if (!grupo || !label) return;
             var searchKey = _pbiFieldMap[grupo] || grupo;
-            var op = 'e'; // equals
-            var val = label;
             // Campos de data/tempo não fazem drill-down simples
             if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime'].indexOf(grupo) >= 0) return;
-            // "(sem status)" ou "(sem valor)" → buscar vazio
-            if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; op = 'e'; }
-            window.location.href = 'index.php?module=Leads&view=List&search_key=' +
-                encodeURIComponent(searchKey) + '&search_value=' + encodeURIComponent(val) + '&operator=' + op;
+            var val = label;
+            if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; }
+            // Usar search_params (formato nativo vTiger) + forçar view "Todos"
+            var params = JSON.stringify([[[searchKey, 'e', val]]]);
+            var url = 'index.php?module=Leads&view=List&search_params=' + encodeURIComponent(params);
+            if (_pbiAllViewId) url += '&viewname=' + _pbiAllViewId;
+            window.location.href = url;
         }
 
         // Inicializa todos os gráficos registrados
