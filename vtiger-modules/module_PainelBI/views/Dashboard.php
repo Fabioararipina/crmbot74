@@ -41,8 +41,11 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
         // Relatórios disponíveis para "Add Widget"
         $relatorios = $dp->getRelatorios();
 
-        // cvid da view "Todos" para drill-down
-        $allViewId = $dp->getAllViewId('Leads');
+        // cvid da view "Todos" para drill-down (ambos módulos)
+        $allViewIds = [
+            'Leads'      => $dp->getAllViewId('Leads'),
+            'Potentials' => $dp->getAllViewId('Potentials'),
+        ];
 
         // Separar boards por tipo
         $myBoards     = array_filter($boards, fn($b) => !$b['compartilhado']);
@@ -160,6 +163,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 <?php foreach ($widgets as $widget):
                     $config     = json_decode(html_entity_decode($widget['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? [];
                     $chartConfig= $config['chart'] ?? ['tipo' => 'bar'];
+                    $wModulo    = $config['modulo_base'] ?? ($widget['modulo_base'] ?? 'Leads');
                     $data       = (new PainelBI_DataProvider_Model())->runReport($config);
                     $chartData  = PainelBI_DataProvider_Model::prepareChartData($chartConfig, $data);
                     $largura    = (int)($widget['largura'] ?? 6);
@@ -185,13 +189,14 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                                 window._pbiCharts.push({
                                     id: 'chart-<?= $widgetId ?>',
                                     data: <?= json_encode($chartData, JSON_UNESCAPED_UNICODE) ?>,
-                                    grupo: <?= json_encode($config['grupo'] ?? '', JSON_UNESCAPED_UNICODE) ?>
+                                    grupo: <?= json_encode($config['grupo'] ?? '', JSON_UNESCAPED_UNICODE) ?>,
+                                    modulo: <?= json_encode($wModulo, JSON_UNESCAPED_UNICODE) ?>
                                 });
                                 </script>
                             <?php endif; ?>
 
                             <?php if (in_array($chartConfig['tipo'] ?? '', ['none']) || $largura === 12): ?>
-                                <?php $this->_renderTable($data, $chartConfig['tipo'] ?? 'none', $relId, $config['grupo'] ?? ''); ?>
+                                <?php $this->_renderTable($data, $chartConfig['tipo'] ?? 'none', $relId, $config['grupo'] ?? '', $wModulo); ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -277,7 +282,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
 
     // ─── Render table ─────────────────────────────────────────────────────────
 
-    private function _renderTable(array $data, string $chartTipo = 'bar', int $relId = 0, string $grupo = ''): void {
+    private function _renderTable(array $data, string $chartTipo = 'bar', int $relId = 0, string $grupo = '', string $modulo = 'Leads'): void {
         if (empty($data['dados'])) {
             echo '<p class="text-muted text-center" style="margin:10px 0"><small>Sem dados</small></p>';
             return;
@@ -297,7 +302,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                         $vals = array_values($row);
                         $drillVal = $grupo ? ($row[$grupo] ?? ($vals[0] ?? '')) : '';
                     ?>
-                    <tr<?php if ($grupo): ?> style="cursor:pointer" onclick="pbiDrillDown(<?= htmlspecialchars(json_encode($grupo), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($drillVal), ENT_QUOTES) ?>)"<?php endif; ?>>
+                    <tr<?php if ($grupo): ?> style="cursor:pointer" onclick="pbiDrillDown(<?= htmlspecialchars(json_encode($grupo), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($drillVal), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($modulo), ENT_QUOTES) ?>)"<?php endif; ?>>
                         <?php foreach ($data['chaves'] as $i => $chave): ?>
                             <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
                         <?php endforeach; ?>
@@ -375,27 +380,36 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
     private function _chartScript(int $boardId, int $tabId): void { ?>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script>
-        // Mapeamento campo PainelBI → campo de busca vTiger
-        var _pbiFieldMap = {
-            'leadstatus': 'leadstatus', 'leadsource': 'leadsource',
-            'user_name': 'assigned_user_id', 'data_criacao': 'createdtime',
-            'mes_criacao': 'createdtime', 'semana_criacao': 'createdtime',
-            'firstname': 'firstname', 'lastname': 'lastname',
-            'company': 'company', 'email': 'email', 'phone': 'phone'
+        // Mapeamento campo PainelBI → campo de busca vTiger (por módulo)
+        var _pbiFieldMaps = {
+            'Leads': {
+                'leadstatus': 'leadstatus', 'leadsource': 'leadsource',
+                'user_name': 'assigned_user_id', 'data_criacao': 'createdtime',
+                'mes_criacao': 'createdtime', 'semana_criacao': 'createdtime',
+                'firstname': 'firstname', 'lastname': 'lastname',
+                'company': 'company', 'email': 'email', 'phone': 'phone'
+            },
+            'Potentials': {
+                'sales_stage': 'sales_stage', 'potentialtype': 'opportunity_type',
+                'leadsource': 'leadsource', 'user_name': 'assigned_user_id',
+                'potentialname': 'potentialname', 'account_name': 'related_to',
+                'probability': 'probability'
+            }
         };
-        var _pbiAllViewId = <?= (int)$allViewId ?>;
+        var _pbiAllViewIds = <?= json_encode($allViewIds) ?>;
 
-        function pbiDrillDown(grupo, label) {
+        function pbiDrillDown(grupo, label, modulo) {
+            modulo = modulo || 'Leads';
             if (!grupo || !label) return;
-            var searchKey = _pbiFieldMap[grupo] || grupo;
-            // Campos de data/tempo não fazem drill-down simples
-            if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime'].indexOf(grupo) >= 0) return;
+            var fieldMap = _pbiFieldMaps[modulo] || _pbiFieldMaps['Leads'];
+            var searchKey = fieldMap[grupo] || grupo;
+            if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime','mes_fechamento'].indexOf(grupo) >= 0) return;
             var val = label;
-            if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; }
-            // Usar search_params (formato nativo vTiger) + forçar view "Todos"
+            if (val === '(sem status)' || val === '(sem valor)' || val === '(sem etapa)' || val === 'Não informado') { val = ''; }
             var params = JSON.stringify([[[searchKey, 'e', val]]]);
-            var url = 'index.php?module=Leads&view=List&search_params=' + encodeURIComponent(params);
-            if (_pbiAllViewId) url += '&viewname=' + _pbiAllViewId;
+            var url = 'index.php?module=' + modulo + '&view=List&search_params=' + encodeURIComponent(params);
+            var viewId = _pbiAllViewIds[modulo] || 0;
+            if (viewId) url += '&viewname=' + viewId;
             window.location.href = url;
         }
 
@@ -407,6 +421,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 var d = cfg.data;
                 var opts = d.options || {};
                 var grupo = cfg.grupo || '';
+                var modulo = cfg.modulo || 'Leads';
                 var chart = new Chart(canvas, {
                     type: d.tipo,
                     data: { labels: d.labels, datasets: d.datasets },
@@ -425,7 +440,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                             if (!elements.length || !grupo) return;
                             var idx = elements[0].index;
                             var label = d.labels[idx];
-                            pbiDrillDown(grupo, label);
+                            pbiDrillDown(grupo, label, modulo);
                         }
                     }
                 });

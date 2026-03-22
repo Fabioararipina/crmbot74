@@ -32,15 +32,10 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         $condGrupos  = $config['condicoes_grupos'] ?? [['condicoes'=>[]]];
         $colunas     = $config['colunas'] ?? ['nome_completo','phone','leadstatus','atendente','createdtime'];
 
-        $fields     = PainelBI_DataProvider_Model::getLeadsFields();
         $aggFuncs   = PainelBI_DataProvider_Model::getAggregateFunctions();
         $chartTypes = PainelBI_DataProvider_Model::getChartTypes();
         $operators  = PainelBI_DataProvider_Model::getOperators();
         $periods    = PainelBI_DataProvider_Model::getPeriodOptions();
-
-        $statuses = $dp->getLeadStatuses();
-        $sources  = $dp->getLeadSources();
-        $users    = $dp->getUsers();
 
         $tipo        = $rel['tipo'] ?? 'summary';
         $modulo      = $rel['modulo_base'] ?? 'Leads';
@@ -52,6 +47,22 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         $ordemDir    = $config['ordem_dir'] ?? 'DESC';
         $limite      = $config['limite'] ?? 500;
 
+        // Campos do módulo selecionado
+        $fields = PainelBI_DataProvider_Model::getModuleFields($modulo);
+
+        // Picklists para condições (ambos os módulos)
+        $statuses     = $dp->getLeadStatuses();
+        $sources      = $dp->getLeadSources();
+        $salesStages  = $dp->getSalesStages();
+        $oppTypes     = $dp->getOpportunityTypes();
+        $users        = $dp->getUsers();
+
+        // Campos de todos os módulos para JS (troca dinâmica de módulo)
+        $allModuleFields = [
+            'Leads'      => PainelBI_DataProvider_Model::getLeadsFields(),
+            'Potentials' => PainelBI_DataProvider_Model::getPotentialsFields(),
+        ];
+
         echo $this->_css();
 
         $fieldsJson    = json_encode($fields, JSON_UNESCAPED_UNICODE);
@@ -59,7 +70,10 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         $periodsJson   = json_encode($periods, JSON_UNESCAPED_UNICODE);
         $statusesJson  = json_encode($statuses, JSON_UNESCAPED_UNICODE);
         $sourcesJson   = json_encode($sources, JSON_UNESCAPED_UNICODE);
+        $salesStagesJson = json_encode($salesStages, JSON_UNESCAPED_UNICODE);
+        $oppTypesJson  = json_encode($oppTypes, JSON_UNESCAPED_UNICODE);
         $usersJson     = json_encode(array_map(fn($u) => ['id'=>$u['id'],'nome'=>trim($u['nome']),'user_name'=>$u['user_name']], $users), JSON_UNESCAPED_UNICODE);
+        $allFieldsJson = json_encode($allModuleFields, JSON_UNESCAPED_UNICODE);
         ?>
 
         <div class="pbi-con-container">
@@ -91,8 +105,9 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
             <div class="form-inline" style="display:flex;gap:15px;align-items:center;flex-wrap:wrap">
                 <div class="form-group">
                     <label>Módulo: </label>
-                    <select class="form-control input-sm" id="pbi-modulo">
+                    <select class="form-control input-sm" id="pbi-modulo" onchange="pbiModuloChanged()">
                         <option value="Leads" <?= $modulo === 'Leads' ? 'selected' : '' ?>>Leads</option>
+                        <option value="Potentials" <?= $modulo === 'Potentials' ? 'selected' : '' ?>>Oportunidades</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -264,7 +279,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                         <div class="pbi-cond-rows">
                             <?php foreach ($grupo['condicoes'] ?? [] as $ci => $cond): ?>
                             <div class="pbi-cond-row-build">
-                                <?php $this->_renderCondRow($cond, $fields, $operators, $periods, $statuses, $sources, $users); ?>
+                                <?php $this->_renderCondRow($cond, $fields, $operators, $periods, $statuses, $sources, $users, $salesStages, $oppTypes); ?>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -315,11 +330,14 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
 
         <script>
         // ─── Estado dos campos ───
+        var PBI_ALL_FIELDS = <?= $allFieldsJson ?>;
         var PBI_FIELDS    = <?= $fieldsJson ?>;
         var PBI_OPERATORS = <?= $operatorsJson ?>;
         var PBI_PERIODS   = <?= $periodsJson ?>;
         var PBI_STATUSES  = <?= $statusesJson ?>;
         var PBI_SOURCES   = <?= $sourcesJson ?>;
+        var PBI_SALES_STAGES = <?= $salesStagesJson ?>;
+        var PBI_OPP_TYPES = <?= $oppTypesJson ?>;
         var PBI_USERS     = <?= $usersJson ?>;
 
         // ─── Toggle seções ───
@@ -332,6 +350,44 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 var chev = document.getElementById(chevId);
                 if (chev) chev.style.transform = open ? 'rotate(-90deg)' : '';
             }
+        }
+
+        // ─── Módulo mudou: recarregar campos ───
+        function pbiModuloChanged() {
+            var mod = document.getElementById('pbi-modulo').value;
+            PBI_FIELDS = PBI_ALL_FIELDS[mod] || PBI_ALL_FIELDS['Leads'];
+            // Recarregar selects de grupo, ordem, agregações e colunas
+            var grupoEl = document.getElementById('pbi-grupo');
+            var ordemEl = document.getElementById('pbi-ordem');
+            var opts = '<option value="">(sem agrupamento)</option>';
+            var ordemOpts = '';
+            Object.entries(PBI_FIELDS).forEach(function(e) {
+                var k = e[0], f = e[1];
+                if (!f.no_group) opts += '<option value="'+k+'">'+f.label+'</option>';
+                ordemOpts += '<option value="'+k+'">'+f.label+'</option>';
+            });
+            grupoEl.innerHTML = opts;
+            ordemEl.innerHTML = ordemOpts;
+            // Atualizar agregações
+            document.querySelectorAll('.pbi-agg-campo').forEach(function(sel) {
+                var cur = sel.value;
+                sel.innerHTML = '<option value="*">Total (*)</option>' +
+                    Object.entries(PBI_FIELDS).map(function(e) { return '<option value="'+e[0]+'">'+e[1].label+'</option>'; }).join('');
+                sel.value = cur;
+            });
+            // Atualizar colunas
+            var colsBody = document.getElementById('pbi-cols-body');
+            if (colsBody) {
+                var colsHtml = '<div class="row">';
+                Object.entries(PBI_FIELDS).forEach(function(e) {
+                    colsHtml += '<div class="col-md-3" style="margin-bottom:5px"><label class="pbi-col-chk">' +
+                        '<input type="checkbox" name="pbi_colunas" value="'+e[0]+'"> '+e[1].label+'</label></div>';
+                });
+                colsHtml += '</div>';
+                colsBody.innerHTML = colsHtml;
+            }
+            // Limpar condições
+            document.querySelectorAll('.pbi-cond-rows').forEach(function(el) { el.innerHTML = ''; });
         }
 
         // ─── Tipo de relatório ───
@@ -457,6 +513,30 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                     '</select>';
                 return;
             }
+            if ((op === 'in_list' || op === 'not_in_list') && campo === 'sales_stage') {
+                wrap.innerHTML = '<select class="form-control input-sm pbi-cond-val" multiple>' +
+                    PBI_SALES_STAGES.map(s => '<option value="'+s+'">'+s+'</option>').join('') +
+                    '</select>';
+                return;
+            }
+            if (campo === 'sales_stage' && op === 'eq') {
+                wrap.innerHTML = '<select class="form-control input-sm pbi-cond-val">' +
+                    PBI_SALES_STAGES.map(s => '<option value="'+s+'">'+s+'</option>').join('') +
+                    '</select>';
+                return;
+            }
+            if ((op === 'in_list' || op === 'not_in_list') && campo === 'potentialtype') {
+                wrap.innerHTML = '<select class="form-control input-sm pbi-cond-val" multiple>' +
+                    PBI_OPP_TYPES.map(s => '<option value="'+s+'">'+s+'</option>').join('') +
+                    '</select>';
+                return;
+            }
+            if (campo === 'potentialtype' && op === 'eq') {
+                wrap.innerHTML = '<select class="form-control input-sm pbi-cond-val">' +
+                    PBI_OPP_TYPES.map(s => '<option value="'+s+'">'+s+'</option>').join('') +
+                    '</select>';
+                return;
+            }
             // Default: text input
             var inpType = (tipo === 'datetime' || tipo === 'date') ? 'date' : (tipo === 'integer' ? 'number' : 'text');
             wrap.innerHTML = '<input type="'+inpType+'" class="form-control input-sm pbi-cond-val" placeholder="Valor...">';
@@ -508,12 +588,21 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
             document.querySelectorAll('input[name="pbi_colunas"]:checked').forEach(function(el) {
                 colunas.push(el.value);
             });
-            if (!colunas.length) colunas = ['nome_completo','phone','leadstatus','atendente','createdtime'];
+            if (!colunas.length) {
+                var mod = document.getElementById('pbi-modulo').value;
+                colunas = mod === 'Potentials'
+                    ? ['potentialname','sales_stage','amount','atendente','createdtime']
+                    : ['nome_completo','phone','leadstatus','atendente','createdtime'];
+            }
 
             // Campos de dados para o gráfico
             var camposDados = agregacoes.map(a => a.alias);
 
+            var moduloBase = document.getElementById('pbi-modulo').value;
+            var defaultLabel = moduloBase === 'Potentials' ? 'sales_stage' : 'leadstatus';
+
             return {
+                modulo_base: moduloBase,
                 tipo: tipo,
                 grupo: grupo || null,
                 agregacoes: agregacoes,
@@ -524,7 +613,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 limite: parseInt(document.getElementById('pbi-limite').value) || 500,
                 chart: {
                     tipo: document.getElementById('pbi-chart-tipo').value,
-                    campo_label: grupo || (tipo === 'summary' ? 'leadstatus' : ''),
+                    campo_label: grupo || (tipo === 'summary' ? defaultLabel : ''),
                     campos_dados: camposDados,
                     mostrar_grid:    !!parseInt(document.getElementById('pbi-opt-grid').value),
                     mostrar_label:   !!parseInt(document.getElementById('pbi-opt-label').value),
@@ -616,7 +705,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
     }
 
     // Renderiza uma row de condição com valores já preenchidos
-    private function _renderCondRow(array $cond, array $fields, array $operators, array $periods, array $statuses, array $sources, array $users): void {
+    private function _renderCondRow(array $cond, array $fields, array $operators, array $periods, array $statuses, array $sources, array $users, array $salesStages = [], array $oppTypes = []): void {
         $campo  = $cond['campo'] ?? 'leadstatus';
         $op     = $cond['op'] ?? 'eq';
         $valor  = $cond['valor'] ?? '';
@@ -677,6 +766,36 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
             } elseif ($campo === 'leadsource') {
                 echo '<select class="form-control input-sm pbi-cond-val">';
                 foreach ($sources as $s) {
+                    $sel = $valor === $s ? 'selected' : '';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
+                }
+                echo '</select>';
+            } elseif (in_array($op, ['in_list','not_in_list']) && $campo === 'sales_stage') {
+                $vals = is_array($valor) ? $valor : [$valor];
+                echo '<select class="form-control input-sm pbi-cond-val" multiple>';
+                foreach ($salesStages as $s) {
+                    $sel = in_array($s, $vals) ? 'selected' : '';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
+                }
+                echo '</select>';
+            } elseif ($campo === 'sales_stage') {
+                echo '<select class="form-control input-sm pbi-cond-val">';
+                foreach ($salesStages as $s) {
+                    $sel = $valor === $s ? 'selected' : '';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
+                }
+                echo '</select>';
+            } elseif (in_array($op, ['in_list','not_in_list']) && $campo === 'potentialtype') {
+                $vals = is_array($valor) ? $valor : [$valor];
+                echo '<select class="form-control input-sm pbi-cond-val" multiple>';
+                foreach ($oppTypes as $s) {
+                    $sel = in_array($s, $vals) ? 'selected' : '';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
+                }
+                echo '</select>';
+            } elseif ($campo === 'potentialtype') {
+                echo '<select class="form-control input-sm pbi-cond-val">';
+                foreach ($oppTypes as $s) {
                     $sel = $valor === $s ? 'selected' : '';
                     echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
                 }

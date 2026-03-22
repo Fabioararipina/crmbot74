@@ -53,8 +53,35 @@ class PainelBI_DataProvider_Model {
         ];
     }
 
+    public static function getPotentialsFields(): array {
+        return [
+            'potentialname'  => ['label'=>'Nome da Oportunidade','type'=>'text',     'sql_s'=>'p.potentialname',  'sql_w'=>'p.potentialname'],
+            'amount'         => ['label'=>'Valor',              'type'=>'currency',  'sql_s'=>'p.amount',         'sql_w'=>'p.amount'],
+            'sales_stage'    => ['label'=>'Etapa de Venda',     'type'=>'picklist',  'sql_s'=>"COALESCE(p.sales_stage,'(sem etapa)')", 'sql_w'=>'p.sales_stage', 'picklist'=>'vtiger_sales_stage', 'picklist_col'=>'sales_stage'],
+            'potentialtype'  => ['label'=>'Tipo de Oportunidade','type'=>'picklist', 'sql_s'=>"COALESCE(NULLIF(p.potentialtype,''),'Não informado')", 'sql_w'=>'p.potentialtype', 'picklist'=>'vtiger_opportunity_type', 'picklist_col'=>'opportunity_type'],
+            'leadsource'     => ['label'=>'Origem',             'type'=>'picklist',  'sql_s'=>"COALESCE(NULLIF(p.leadsource,''),'Não informado')", 'sql_w'=>'p.leadsource', 'picklist'=>'vtiger_leadsource', 'picklist_col'=>'leadsource'],
+            'closingdate'    => ['label'=>'Data de Fechamento', 'type'=>'date',      'sql_s'=>'p.closingdate',    'sql_w'=>'p.closingdate'],
+            'probability'    => ['label'=>'Probabilidade (%)',  'type'=>'integer',   'sql_s'=>'p.probability',    'sql_w'=>'p.probability'],
+            'nextstep'       => ['label'=>'Próximo Passo',      'type'=>'text',      'sql_s'=>'p.nextstep',       'sql_w'=>'p.nextstep'],
+            'potential_no'   => ['label'=>'Nº Oportunidade',    'type'=>'text',      'sql_s'=>'p.potential_no',   'sql_w'=>'p.potential_no'],
+            'forecast_amount'=> ['label'=>'Valor Previsto',     'type'=>'currency',  'sql_s'=>'p.forecast_amount','sql_w'=>'p.forecast_amount'],
+            // Conta/Contato relacionado
+            'account_name'   => ['label'=>'Conta',              'type'=>'text',      'sql_s'=>"COALESCE(acc.accountname,'')", 'sql_w'=>'acc.accountname'],
+            'contact_name'   => ['label'=>'Contato',            'type'=>'text',      'sql_s'=>"CONCAT(COALESCE(con.firstname,''),' ',COALESCE(con.lastname,''))", 'sql_w'=>'con.lastname', 'no_group'=>true],
+            // Atendente
+            'atendente'      => ['label'=>'Responsável',        'type'=>'text',      'sql_s'=>"CONCAT(COALESCE(u.first_name,''),' ',COALESCE(u.last_name,''))", 'sql_w'=>'u.user_name', 'no_group'=>true],
+            'user_name'      => ['label'=>'Login',              'type'=>'text',      'sql_s'=>'u.user_name',      'sql_w'=>'u.user_name'],
+            // Tempo
+            'createdtime'    => ['label'=>'Criado em',          'type'=>'datetime',  'sql_s'=>'e.createdtime',    'sql_w'=>'e.createdtime'],
+            'modifiedtime'   => ['label'=>'Modificado em',      'type'=>'datetime',  'sql_s'=>'e.modifiedtime',   'sql_w'=>'e.modifiedtime'],
+            'data_criacao'   => ['label'=>'Data',               'type'=>'date',      'sql_s'=>'DATE(e.createdtime)',    'sql_w'=>'DATE(e.createdtime)'],
+            'mes_criacao'    => ['label'=>'Mês/Ano',            'type'=>'text',      'sql_s'=>"DATE_FORMAT(e.createdtime,'%m/%Y')", 'sql_w'=>"DATE_FORMAT(e.createdtime,'%Y-%m')"],
+            'mes_fechamento' => ['label'=>'Mês Fechamento',     'type'=>'text',      'sql_s'=>"DATE_FORMAT(p.closingdate,'%m/%Y')", 'sql_w'=>"DATE_FORMAT(p.closingdate,'%Y-%m')"],
+        ];
+    }
+
     public static function getModuleFields(string $module = 'Leads'): array {
-        return self::getLeadsFields(); // Expandir para outros módulos futuramente
+        return $module === 'Potentials' ? self::getPotentialsFields() : self::getLeadsFields();
     }
 
     public static function getAggregateFunctions(): array {
@@ -107,11 +134,25 @@ class PainelBI_DataProvider_Model {
         LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0";
     }
 
+    private function getPotentialsFrom(): string {
+        return "FROM vtiger_potential p
+        JOIN vtiger_crmentity e ON e.crmid = p.potentialid AND e.deleted = 0 AND e.setype = 'Potentials'
+        LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0
+        LEFT JOIN vtiger_account acc ON acc.accountid = p.related_to
+        LEFT JOIN vtiger_contactdetails con ON con.contactid = p.contact_id";
+    }
+
+    private function getModuleFrom(string $module): string {
+        return $module === 'Potentials' ? $this->getPotentialsFrom() : $this->getLeadsFrom();
+    }
+
     // ─── Executar relatório (principal) ──────────────────────────────────────
 
     public function runReport(array $config): array {
         $tipo      = $config['tipo'] ?? 'detail';
-        $colunas   = $config['colunas'] ?? ['nome_completo','leadstatus','atendente','createdtime'];
+        $modulo    = $config['modulo_base'] ?? 'Leads';
+        $colDefault= $modulo === 'Potentials' ? ['potentialname','sales_stage','amount','atendente','createdtime'] : ['nome_completo','leadstatus','atendente','createdtime'];
+        $colunas   = $config['colunas'] ?? $colDefault;
         $grupo     = $tipo === 'summary' ? ($config['grupo'] ?? null) : null;
         $agregacoes= $tipo === 'summary' ? ($config['agregacoes'] ?? []) : [];
         $condGrupos= $config['condicoes_grupos'] ?? [];
@@ -119,7 +160,7 @@ class PainelBI_DataProvider_Model {
         $ordemDir  = strtoupper($config['ordem_dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
         $limite    = min(max((int)($config['limite'] ?? 500), 1), 5000);
 
-        $fields = self::getLeadsFields();
+        $fields = self::getModuleFields($modulo);
         $params = [];
 
         // SELECT
@@ -169,7 +210,7 @@ class PainelBI_DataProvider_Model {
         }
 
         // FROM
-        $from = $this->getLeadsFrom();
+        $from = $this->getModuleFrom($modulo);
 
         // WHERE (condições aninhadas)
         $condSQL = $this->buildConditionsSQL($condGrupos, $fields, $params);
@@ -316,6 +357,14 @@ class PainelBI_DataProvider_Model {
 
     public function getLeadSources(): array {
         return $this->getPicklistValues('vtiger_leadsource', 'leadsource');
+    }
+
+    public function getSalesStages(): array {
+        return $this->getPicklistValues('vtiger_sales_stage', 'sales_stage');
+    }
+
+    public function getOpportunityTypes(): array {
+        return $this->getPicklistValues('vtiger_opportunity_type', 'opportunity_type');
     }
 
     public function getUsers(): array {

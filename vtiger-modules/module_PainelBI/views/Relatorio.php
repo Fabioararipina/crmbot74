@@ -32,14 +32,15 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
 
         $config      = json_decode(html_entity_decode($rel['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? [];
         $chartConfig = $config['chart'] ?? ['tipo' => 'bar'];
-        $fields      = PainelBI_DataProvider_Model::getLeadsFields();
+        $modulo      = $config['modulo_base'] ?? ($rel['modulo_base'] ?? 'Leads');
+        $fields      = PainelBI_DataProvider_Model::getModuleFields($modulo);
 
         // Executar relatório
         $data      = $dp->runReport($config);
         $chartData = PainelBI_DataProvider_Model::prepareChartData($chartConfig, $data);
 
         // cvid da view "Todos" para drill-down
-        $allViewId = $dp->getAllViewId('Leads');
+        $allViewId = $dp->getAllViewId($modulo);
 
         // Informações de condições para exibição
         $condGrupos = $config['condicoes_grupos'] ?? [];
@@ -239,21 +240,31 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
         </div><!-- /pbi-rel-container -->
 
         <script>
-        var _pbiFieldMap = {
-            'leadstatus': 'leadstatus', 'leadsource': 'leadsource',
-            'user_name': 'assigned_user_id', 'company': 'company',
-            'firstname': 'firstname', 'lastname': 'lastname',
-            'email': 'email', 'phone': 'phone'
+        var _pbiModule = <?= json_encode($modulo) ?>;
+        var _pbiFieldMaps = {
+            'Leads': {
+                'leadstatus': 'leadstatus', 'leadsource': 'leadsource',
+                'user_name': 'assigned_user_id', 'company': 'company',
+                'firstname': 'firstname', 'lastname': 'lastname',
+                'email': 'email', 'phone': 'phone'
+            },
+            'Potentials': {
+                'sales_stage': 'sales_stage', 'potentialtype': 'opportunity_type',
+                'leadsource': 'leadsource', 'user_name': 'assigned_user_id',
+                'potentialname': 'potentialname', 'account_name': 'related_to',
+                'probability': 'probability'
+            }
         };
         var _pbiAllViewId = <?= (int)$allViewId ?>;
         function pbiDrillDown(grupo, label) {
             if (!grupo || !label) return;
-            var searchKey = _pbiFieldMap[grupo] || grupo;
-            if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime'].indexOf(grupo) >= 0) return;
+            var fieldMap = _pbiFieldMaps[_pbiModule] || _pbiFieldMaps['Leads'];
+            var searchKey = fieldMap[grupo] || grupo;
+            if (['data_criacao','mes_criacao','semana_criacao','createdtime','modifiedtime','mes_fechamento'].indexOf(grupo) >= 0) return;
             var val = label;
-            if (val === '(sem status)' || val === '(sem valor)' || val === 'Não informado') { val = ''; }
+            if (val === '(sem status)' || val === '(sem valor)' || val === '(sem etapa)' || val === 'Não informado') { val = ''; }
             var params = JSON.stringify([[[searchKey, 'e', val]]]);
-            var url = 'index.php?module=Leads&view=List&search_params=' + encodeURIComponent(params);
+            var url = 'index.php?module=' + _pbiModule + '&view=List&search_params=' + encodeURIComponent(params);
             if (_pbiAllViewId) url += '&viewname=' + _pbiAllViewId;
             window.location.href = url;
         }
