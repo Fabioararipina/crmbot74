@@ -21,6 +21,17 @@ class PainelBI_DataProvider_Model {
         $this->adb = PearDatabase::getInstance();
     }
 
+    /** Decodifica HTML entities injetadas por PearDatabase::fetch_array/to_html */
+    private static function decodeRow(?array $row): ?array {
+        if (!$row) return $row;
+        foreach ($row as $k => $v) {
+            if (is_string($v)) {
+                $row[$k] = html_entity_decode($v, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        return $row;
+    }
+
     // ─── Definição de campos disponíveis por módulo ───────────────────────────
 
     public static function getLeadsFields(): array {
@@ -234,7 +245,7 @@ class PainelBI_DataProvider_Model {
         $result = $this->adb->pquery($sql, $params);
         $rows   = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $rows[] = $row;
+            $rows[] = self::decodeRow($row);
         }
 
         return [
@@ -345,6 +356,7 @@ class PainelBI_DataProvider_Model {
         $result = $this->adb->pquery("SELECT `{$col}` AS val FROM `{$table}` WHERE presence=1 ORDER BY sortorderid ASC", []);
         $vals = [];
         while ($row = $this->adb->fetch_array($result)) {
+            $row = self::decodeRow($row);
             $v = $row['val'] ?? '';
             if ($v !== '') $vals[] = $v;
         }
@@ -373,7 +385,7 @@ class PainelBI_DataProvider_Model {
         );
         $users = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $users[] = $row;
+            $users[] = self::decodeRow($row);
         }
         return $users;
     }
@@ -388,7 +400,7 @@ class PainelBI_DataProvider_Model {
         );
         $boards = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $boards[] = $row;
+            $boards[] = self::decodeRow($row);
         }
         return $boards;
     }
@@ -400,7 +412,7 @@ class PainelBI_DataProvider_Model {
         );
         $tabs = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $tabs[] = $row;
+            $tabs[] = self::decodeRow($row);
         }
         return $tabs;
     }
@@ -416,7 +428,7 @@ class PainelBI_DataProvider_Model {
         );
         $widgets = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $widgets[] = $row;
+            $widgets[] = self::decodeRow($row);
         }
         return $widgets;
     }
@@ -429,7 +441,7 @@ class PainelBI_DataProvider_Model {
         $result = $this->adb->pquery($sql, [$userId]);
         $relatorios = [];
         while ($row = $this->adb->fetch_array($result)) {
-            $relatorios[] = $row;
+            $relatorios[] = self::decodeRow($row);
         }
         return $relatorios;
     }
@@ -437,7 +449,7 @@ class PainelBI_DataProvider_Model {
     public function getRelatorio(int $id): ?array {
         $result = $this->adb->pquery("SELECT * FROM vtiger_painelbi_relatorios WHERE id=? AND deleted=0", [$id]);
         $row = $this->adb->fetch_array($result);
-        return $row ?: null;
+        return $row ? self::decodeRow($row) : null;
     }
 
     public function saveRelatorio(array $data): int {
