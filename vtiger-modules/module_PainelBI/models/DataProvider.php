@@ -1,4 +1,11 @@
 <?php
+// Helper: htmlspecialchars sem double-encode (PearDatabase::fetch_array já aplica htmlentities)
+if (!function_exists('pbi_e')) {
+    function pbi_e($str) {
+        return htmlspecialchars((string)$str, ENT_QUOTES, 'UTF-8', false);
+    }
+}
+
 /**
  * PainelBI_DataProvider_Model
  * Toda a lógica de consulta SQL: relatórios, condições, agregações.

@@ -60,7 +60,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                 </a>
             </div>
             <div class="pbi-rel-title-center">
-                <h4><?= htmlspecialchars($rel['titulo']) ?></h4>
+                <h4><?= pbi_e($rel['titulo']) ?></h4>
             </div>
             <div class="pbi-rel-header-right">
                 <button class="btn btn-sm btn-default" onclick="window.print()">
@@ -84,7 +84,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                 <span class="pbi-section-meta">
                     <?= $chartTypes[$chartConfig['tipo'] ?? 'bar'] ?? 'Barras' ?>
                     <?php if ($config['grupo'] ?? null): ?>
-                        — Agrupado por: <b><?= htmlspecialchars($fields[$config['grupo']]['label'] ?? $config['grupo']) ?></b>
+                        — Agrupado por: <b><?= pbi_e($fields[$config['grupo']]['label'] ?? $config['grupo']) ?></b>
                     <?php endif; ?>
                 </span>
             </div>
@@ -93,19 +93,19 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                 <div class="row pbi-chart-cfg">
                     <div class="col-md-3">
                         <label>Campo de Agrupamento</label>
-                        <p><?= htmlspecialchars($fields[$config['grupo'] ?? '']['label'] ?? '—') ?></p>
+                        <p><?= pbi_e($fields[$config['grupo'] ?? '']['label'] ?? '—') ?></p>
                     </div>
                     <div class="col-md-4">
                         <label>Campos de Dados</label>
                         <p>
                             <?php foreach ($config['agregacoes'] ?? [] as $agg): ?>
-                                <span class="label label-default">× <?= $agg['func'] ?>(<?= $agg['campo'] === '*' ? 'Total' : htmlspecialchars($fields[$agg['campo']]['label'] ?? $agg['campo']) ?>)</span>
+                                <span class="label label-default">× <?= $agg['func'] ?>(<?= $agg['campo'] === '*' ? 'Total' : pbi_e($fields[$agg['campo']]['label'] ?? $agg['campo']) ?>)</span>
                             <?php endforeach; ?>
                         </p>
                     </div>
                     <div class="col-md-2">
                         <label>Posição da Legenda</label>
-                        <p><?= htmlspecialchars($chartConfig['posicao_legenda'] ?? 'top') ?></p>
+                        <p><?= pbi_e($chartConfig['posicao_legenda'] ?? 'top') ?></p>
                     </div>
                     <div class="col-md-3 text-right" style="padding-top:15px">
                         <a href="?module=PainelBI&view=Construtor&record=<?= $id ?>" class="btn btn-xs btn-default">
@@ -166,15 +166,15 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                             <?php if ($ci > 0): ?>
                                 <span class="pbi-cond-and">E</span>
                             <?php endif; ?>
-                            <span class="pbi-cond-field"><?= htmlspecialchars($fLabel) ?></span>
-                            <span class="pbi-cond-op"><?= htmlspecialchars($opLabel) ?></span>
+                            <span class="pbi-cond-field"><?= pbi_e($fLabel) ?></span>
+                            <span class="pbi-cond-op"><?= pbi_e($opLabel) ?></span>
                             <span class="pbi-cond-val">
                                 <?php if (is_array($valor)): ?>
-                                    <?= htmlspecialchars(implode(' — ', $valor)) ?>
+                                    <?= pbi_e(implode(' — ', $valor)) ?>
                                 <?php elseif ($op === 'in_period'): ?>
-                                    <?= htmlspecialchars(PainelBI_DataProvider_Model::getPeriodOptions()[$valor] ?? $valor) ?>
+                                    <?= pbi_e(PainelBI_DataProvider_Model::getPeriodOptions()[$valor] ?? $valor) ?>
                                 <?php else: ?>
-                                    <?= htmlspecialchars((string)$valor) ?>
+                                    <?= pbi_e($valor) ?>
                                 <?php endif; ?>
                             </span>
                         </div>
@@ -193,7 +193,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                 <span class="pbi-section-meta">
                     <?= $rel['modulo_base'] ?>
                     · <?= $rel['tipo'] === 'summary' ? 'Resumo' : 'Detalhado' ?>
-                    · Ordem: <?= htmlspecialchars($fields[$config['ordem'] ?? 'createdtime']['label'] ?? 'Criado em') ?>
+                    · Ordem: <?= pbi_e($fields[$config['ordem'] ?? 'createdtime']['label'] ?? 'Criado em') ?>
                     <?= strtoupper($config['ordem_dir'] ?? 'DESC') ?>
                 </span>
             </div>
@@ -209,7 +209,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                         <thead>
                             <tr>
                                 <?php foreach ($data['labels'] as $lbl): ?>
-                                    <th><?= htmlspecialchars((string)$lbl) ?></th>
+                                    <th><?= pbi_e($lbl) ?></th>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
@@ -219,7 +219,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                             ?>
                             <tr>
                                 <?php foreach ($data['chaves'] as $i => $chave): ?>
-                                    <td><?= htmlspecialchars((string)($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
+                                    <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
                                 <?php endforeach; ?>
                             </tr>
                             <?php endforeach; ?>
@@ -291,7 +291,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
             var blob = new Blob(['\uFEFF' + rows.join('\n')], {type:'text/csv;charset=utf-8'});
             var a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = '<?= addslashes(htmlspecialchars($rel['titulo'])) ?>.csv';
+            a.download = '<?= addslashes(pbi_e($rel['titulo'])) ?>.csv';
             a.click();
         }
         </script>

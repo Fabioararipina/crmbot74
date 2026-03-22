@@ -70,7 +70,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 <a href="?module=PainelBI&view=List" class="btn btn-sm btn-default">
                     <i class="fa fa-arrow-left"></i>
                 </a>
-                <input type="text" id="pbi-titulo" class="form-control pbi-titulo-input" value="<?= htmlspecialchars($titulo) ?>" placeholder="Nome do Relatório...">
+                <input type="text" id="pbi-titulo" class="form-control pbi-titulo-input" value="<?= pbi_e($titulo) ?>" placeholder="Nome do Relatório...">
             </div>
             <div style="display:flex;gap:6px">
                 <label class="pbi-share-chk">
@@ -106,7 +106,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                     <label>Ordenar por: </label>
                     <select class="form-control input-sm" id="pbi-ordem">
                         <?php foreach ($fields as $k => $f): ?>
-                            <option value="<?= $k ?>" <?= $ordem === $k ? 'selected' : '' ?>><?= htmlspecialchars($f['label']) ?></option>
+                            <option value="<?= $k ?>" <?= $ordem === $k ? 'selected' : '' ?>><?= pbi_e($f['label']) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <select class="form-control input-sm" id="pbi-ordem-dir">
@@ -138,7 +138,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                                     if (!empty($f['no_group'])) continue;
                                 ?>
                                     <option value="<?= $k ?>" <?= $grupoAtual === $k ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($f['label']) ?>
+                                        <?= pbi_e($f['label']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -158,7 +158,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                                     <select class="form-control input-sm pbi-agg-campo">
                                         <option value="*" <?= ($agg['campo']??'*') === '*' ? 'selected' : '' ?>>Total (*)</option>
                                         <?php foreach ($fields as $k => $f): ?>
-                                            <option value="<?= $k ?>" <?= ($agg['campo']??'*') === $k ? 'selected' : '' ?>><?= htmlspecialchars($f['label']) ?></option>
+                                            <option value="<?= $k ?>" <?= ($agg['campo']??'*') === $k ? 'selected' : '' ?>><?= pbi_e($f['label']) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                     <button type="button" class="btn btn-xs btn-danger" onclick="this.closest('.pbi-agg-row').remove()">×</button>
@@ -290,7 +290,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                     <div class="col-md-3" style="margin-bottom:5px">
                         <label class="pbi-col-chk">
                             <input type="checkbox" name="pbi_colunas" value="<?= $k ?>" <?= in_array($k, $colunas) ? 'checked' : '' ?>>
-                            <?= htmlspecialchars($f['label']) ?>
+                            <?= pbi_e($f['label']) ?>
                         </label>
                     </div>
                     <?php endforeach; ?>
@@ -625,12 +625,12 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         ?>
         <select class="form-control input-sm pbi-cond-campo" onchange="pbiUpdateOp(this)">
             <?php foreach ($fields as $k => $f): ?>
-                <option value="<?= $k ?>" <?= $campo === $k ? 'selected' : '' ?>><?= htmlspecialchars($f['label']) ?></option>
+                <option value="<?= $k ?>" <?= $campo === $k ? 'selected' : '' ?>><?= pbi_e($f['label']) ?></option>
             <?php endforeach; ?>
         </select>
         <select class="form-control input-sm pbi-cond-op" onchange="pbiUpdateVal(this)">
             <?php foreach ($fieldOps as $ov => $ol): ?>
-                <option value="<?= $ov ?>" <?= $op === $ov ? 'selected' : '' ?>><?= htmlspecialchars($ol) ?></option>
+                <option value="<?= $ov ?>" <?= $op === $ov ? 'selected' : '' ?>><?= pbi_e($ol) ?></option>
             <?php endforeach; ?>
         </select>
         <div class="pbi-cond-val-wrap">
@@ -641,22 +641,22 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 echo '<select class="form-control input-sm pbi-cond-val">';
                 foreach ($periods as $pv => $pl) {
                     $sel = $valor === $pv ? 'selected' : '';
-                    echo "<option value=\"{$pv}\" {$sel}>" . htmlspecialchars($pl) . '</option>';
+                    echo "<option value=\"{$pv}\" {$sel}>" . pbi_e($pl) . '</option>';
                 }
                 echo '</select>';
             } elseif ($op === 'between') {
                 $v1 = is_array($valor) ? ($valor[0] ?? '') : $valor;
                 $v2 = is_array($valor) ? ($valor[1] ?? '') : $valor;
                 $inpType = in_array($fType, ['datetime','date']) ? 'date' : 'number';
-                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val1\" value=\"" . htmlspecialchars($v1) . "\" placeholder=\"De\">";
+                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val1\" value=\"" . pbi_e($v1) . "\" placeholder=\"De\">";
                 echo '<span style="margin:0 4px">—</span>';
-                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val2\" value=\"" . htmlspecialchars($v2) . "\" placeholder=\"Até\">";
+                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val2\" value=\"" . pbi_e($v2) . "\" placeholder=\"Até\">";
             } elseif (in_array($op, ['in_list','not_in_list']) && $campo === 'leadstatus') {
                 $vals = is_array($valor) ? $valor : [$valor];
                 echo '<select class="form-control input-sm pbi-cond-val" multiple>';
                 foreach ($statuses as $s) {
                     $sel = in_array($s, $vals) ? 'selected' : '';
-                    echo "<option value=\"{$s}\" {$sel}>" . htmlspecialchars($s) . '</option>';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
                 }
                 echo '</select>';
             } elseif (in_array($op, ['in_list','not_in_list']) && $campo === 'leadsource') {
@@ -664,26 +664,26 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 echo '<select class="form-control input-sm pbi-cond-val" multiple>';
                 foreach ($sources as $s) {
                     $sel = in_array($s, $vals) ? 'selected' : '';
-                    echo "<option value=\"{$s}\" {$sel}>" . htmlspecialchars($s) . '</option>';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
                 }
                 echo '</select>';
             } elseif ($campo === 'leadstatus') {
                 echo '<select class="form-control input-sm pbi-cond-val">';
                 foreach ($statuses as $s) {
                     $sel = $valor === $s ? 'selected' : '';
-                    echo "<option value=\"{$s}\" {$sel}>" . htmlspecialchars($s) . '</option>';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
                 }
                 echo '</select>';
             } elseif ($campo === 'leadsource') {
                 echo '<select class="form-control input-sm pbi-cond-val">';
                 foreach ($sources as $s) {
                     $sel = $valor === $s ? 'selected' : '';
-                    echo "<option value=\"{$s}\" {$sel}>" . htmlspecialchars($s) . '</option>';
+                    echo "<option value=\"{$s}\" {$sel}>" . pbi_e($s) . '</option>';
                 }
                 echo '</select>';
             } else {
                 $inpType = in_array($fType, ['datetime','date']) ? 'date' : (in_array($fType, ['integer']) ? 'number' : 'text');
-                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val\" value=\"" . htmlspecialchars(is_array($valor) ? implode(',', $valor) : $valor) . "\" placeholder=\"Valor...\">";
+                echo "<input type=\"{$inpType}\" class=\"form-control input-sm pbi-cond-val\" value=\"" . pbi_e(is_array($valor) ? implode(',', $valor) : $valor) . "\" placeholder=\"Valor...\">";
             }
             ?>
         </div>

@@ -72,7 +72,7 @@ class PainelBI_List_View extends Vtiger_Index_View {
                         $iconName  = $tipo === 'summary' ? 'bar-chart' : 'list';
                         $isOwner   = (int)$rel['smownerid'] === (int)$userId;
                     ?>
-                    <div class="pbi-rel-card" data-titulo="<?= htmlspecialchars(strtolower($rel['titulo'])) ?>">
+                    <div class="pbi-rel-card" data-titulo="<?= pbi_e(strtolower($rel['titulo'])) ?>">
                         <div class="pbi-rel-card-body">
                             <div class="pbi-rel-icon <?= $iconClass ?>">
                                 <i class="fa fa-<?= $iconName ?>"></i>
@@ -80,14 +80,14 @@ class PainelBI_List_View extends Vtiger_Index_View {
                             <div class="pbi-rel-info">
                                 <div class="pbi-rel-title">
                                     <a href="?module=PainelBI&view=Relatorio&record=<?= $rel['id'] ?>">
-                                        <?= htmlspecialchars($rel['titulo']) ?>
+                                        <?= pbi_e($rel['titulo']) ?>
                                     </a>
                                     <?php if ($rel['compartilhado']): ?>
                                         <span class="label label-info" style="font-size:9px">Compartilhado</span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="pbi-rel-meta">
-                                    <i class="fa fa-database"></i> <?= htmlspecialchars($rel['modulo_base']) ?>
+                                    <i class="fa fa-database"></i> <?= pbi_e($rel['modulo_base']) ?>
                                     &nbsp;|&nbsp;
                                     <i class="fa fa-<?= $tipo === 'summary' ? 'bar-chart' : 'th-list' ?>"></i>
                                     <?= $tipo === 'summary' ? 'Resumo' : 'Detalhado' ?>

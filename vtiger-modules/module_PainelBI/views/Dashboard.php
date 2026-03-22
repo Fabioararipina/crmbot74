@@ -55,7 +55,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
             <div class="pbi-header-left">
                 <div class="dropdown">
                     <button class="btn btn-default dropdown-toggle pbi-board-btn" data-toggle="dropdown">
-                        <?= htmlspecialchars($this->_getBoardTitle($boards, $boardId)) ?>
+                        <?= pbi_e($this->_getBoardTitle($boards, $boardId)) ?>
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu pbi-board-menu">
@@ -63,7 +63,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                         <?php foreach ($myBoards as $b): ?>
                             <li class="<?= (int)$b['id'] === $boardId ? 'active' : '' ?>">
                                 <a href="?module=PainelBI&view=Dashboard&board_id=<?= $b['id'] ?>">
-                                    <?= htmlspecialchars($b['titulo']) ?>
+                                    <?= pbi_e($b['titulo']) ?>
                                 </a>
                             </li>
                         <?php endforeach; ?>
@@ -74,7 +74,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                                 <li class="<?= (int)$b['id'] === $boardId ? 'active' : '' ?>">
                                     <a href="?module=PainelBI&view=Dashboard&board_id=<?= $b['id'] ?>">
                                         <i class="fa fa-share-alt text-muted" style="font-size:11px"></i>
-                                        <?= htmlspecialchars($b['titulo']) ?>
+                                        <?= pbi_e($b['titulo']) ?>
                                     </a>
                                 </li>
                             <?php endforeach; ?>
@@ -133,7 +133,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
             <?php foreach ($tabs as $tab): ?>
                 <li class="<?= (int)$tab['id'] === $tabId ? 'active' : '' ?>">
                     <a href="?module=PainelBI&view=Dashboard&board_id=<?= $boardId ?>&tab_id=<?= $tab['id'] ?>">
-                        <?= htmlspecialchars($tab['titulo']) ?>
+                        <?= pbi_e($tab['titulo']) ?>
                     </a>
                 </li>
             <?php endforeach; ?>
@@ -167,7 +167,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 <div class="col-md-<?= $largura ?> pbi-widget-col" data-widget-id="<?= $widgetId ?>">
                     <div class="pbi-widget panel panel-default">
                         <div class="pbi-widget-header">
-                            <span><?= htmlspecialchars($widget['titulo']) ?></span>
+                            <span><?= pbi_e($widget['titulo']) ?></span>
                             <div class="pbi-widget-actions">
                                 <a href="?module=PainelBI&view=Relatorio&record=<?= $relId ?>" title="Ver Relatório"><i class="fa fa-external-link"></i></a>
                                 <a href="?module=PainelBI&view=Construtor&record=<?= $relId ?>" title="Editar"><i class="fa fa-pencil"></i></a>
@@ -223,11 +223,11 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                         </div>
                         <div id="pbi-relatorio-list">
                             <?php foreach ($relatorios as $r): ?>
-                            <div class="pbi-rel-item" data-id="<?= $r['id'] ?>" data-titulo="<?= htmlspecialchars($r['titulo']) ?>">
+                            <div class="pbi-rel-item" data-id="<?= $r['id'] ?>" data-titulo="<?= pbi_e($r['titulo']) ?>">
                                 <label class="pbi-rel-label">
                                     <input type="radio" name="pbi_relatorio" value="<?= $r['id'] ?>">
                                     <i class="fa fa-bar-chart text-primary"></i>
-                                    <?= htmlspecialchars($r['titulo']) ?>
+                                    <?= pbi_e($r['titulo']) ?>
                                     <small class="text-muted">(<?= $r['modulo_base'] ?>)</small>
                                 </label>
                             </div>
@@ -285,7 +285,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
             <table class="table table-condensed table-hover pbi-table">
                 <thead><tr>
                     <?php foreach ($data['labels'] as $lbl): ?>
-                        <th><?= htmlspecialchars((string)$lbl) ?></th>
+                        <th><?= pbi_e($lbl) ?></th>
                     <?php endforeach; ?>
                 </tr></thead>
                 <tbody>
@@ -294,7 +294,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                     ?>
                     <tr>
                         <?php foreach ($data['chaves'] as $i => $chave): ?>
-                            <td><?= htmlspecialchars((string)($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
+                            <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
                         <?php endforeach; ?>
                     </tr>
                     <?php endforeach; ?>
