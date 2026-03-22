@@ -113,8 +113,9 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                 <div class="form-group">
                     <label>Tipo de Relatório: </label>
                     <select class="form-control input-sm" id="pbi-tipo" onchange="pbiTipoChanged()">
-                        <option value="summary" <?= $tipo === 'summary' ? 'selected' : '' ?>>Resumo (agrupado)</option>
-                        <option value="detail"  <?= $tipo === 'detail'  ? 'selected' : '' ?>>Detalhado (linhas)</option>
+                        <option value="summary"    <?= $tipo === 'summary'    ? 'selected' : '' ?>>Resumo (agrupado)</option>
+                        <option value="detail"     <?= $tipo === 'detail'     ? 'selected' : '' ?>>Detalhado (linhas)</option>
+                        <option value="conversion" <?= $tipo === 'conversion' ? 'selected' : '' ?>>Taxa de Conversão</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -159,7 +160,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-5" id="pbi-sec-agregacoes">
                         <div class="form-group">
                             <label>Campos de Dados <span class="text-danger">*</span></label>
                             <div id="pbi-agg-list" class="pbi-agg-list">
@@ -394,6 +395,14 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         function pbiTipoChanged() {
             var tipo = document.getElementById('pbi-tipo').value;
             document.getElementById('pbi-sec-colunas').style.display = tipo === 'detail' ? '' : 'none';
+            // Conversão: esconder seção de agregações (são calculadas automaticamente)
+            var aggSec = document.getElementById('pbi-sec-agregacoes');
+            if (aggSec) aggSec.style.display = tipo === 'conversion' ? 'none' : '';
+            // Conversão: só disponível para Leads
+            if (tipo === 'conversion') {
+                document.getElementById('pbi-modulo').value = 'Leads';
+                pbiModuloChanged();
+            }
         }
         pbiTipoChanged();
 
@@ -600,6 +609,27 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
 
             var moduloBase = document.getElementById('pbi-modulo').value;
             var defaultLabel = moduloBase === 'Potentials' ? 'sales_stage' : 'leadstatus';
+
+            // Para tipo conversion, forçar config específica
+            if (tipo === 'conversion') {
+                return {
+                    modulo_base: 'Leads',
+                    tipo: 'conversion',
+                    grupo: grupo || 'leadsource',
+                    condicoes_grupos: condGrupos,
+                    ordem_dir: document.getElementById('pbi-ordem-dir').value || 'DESC',
+                    limite: parseInt(document.getElementById('pbi-limite').value) || 500,
+                    chart: {
+                        tipo: document.getElementById('pbi-chart-tipo').value || 'bar',
+                        campo_label: 'grupo',
+                        campos_dados: ['total', 'convertidos'],
+                        mostrar_grid:    !!parseInt(document.getElementById('pbi-opt-grid').value),
+                        mostrar_label:   !!parseInt(document.getElementById('pbi-opt-label').value),
+                        mostrar_legenda: !!parseInt(document.getElementById('pbi-opt-legenda').value),
+                        posicao_legenda: document.getElementById('pbi-legend-pos').value,
+                    }
+                };
+            }
 
             return {
                 modulo_base: moduloBase,

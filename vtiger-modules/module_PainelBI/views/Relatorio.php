@@ -196,9 +196,11 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                 <b>Dados (<?= $data['total'] ?> registros)</b>
                 <span class="pbi-section-meta">
                     <?= $rel['modulo_base'] ?>
-                    · <?= $rel['tipo'] === 'summary' ? 'Resumo' : 'Detalhado' ?>
+                    · <?= $config['tipo'] === 'conversion' ? 'Conversão' : ($rel['tipo'] === 'summary' ? 'Resumo' : 'Detalhado') ?>
+                    <?php if ($config['tipo'] !== 'conversion'): ?>
                     · Ordem: <?= pbi_e($fields[$config['ordem'] ?? 'createdtime']['label'] ?? 'Criado em') ?>
                     <?= strtoupper($config['ordem_dir'] ?? 'DESC') ?>
+                    <?php endif; ?>
                 </span>
             </div>
             <div class="pbi-data-body">
@@ -222,14 +224,38 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
                             $grupo = $config['grupo'] ?? '';
                             foreach ($data['dados'] as $row):
                                 $vals = array_values($row);
-                                $drillVal = $grupo ? ($row[$grupo] ?? ($vals[0] ?? '')) : '';
+                                $drillVal = $grupo ? ($row[$grupo] ?? ($row['grupo'] ?? ($vals[0] ?? ''))) : '';
                             ?>
                             <tr<?php if ($grupo): ?> style="cursor:pointer" onclick="pbiDrillDown(<?= htmlspecialchars(json_encode($grupo), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($drillVal), ENT_QUOTES) ?>)"<?php endif; ?>>
                                 <?php foreach ($data['chaves'] as $i => $chave): ?>
-                                    <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
+                                    <td><?php
+                                        $v = $row[$chave] ?? ($vals[$i] ?? '');
+                                        if ($chave === 'taxa_conversao') {
+                                            $pct = (float)$v;
+                                            $color = $pct >= 20 ? '#27ae60' : ($pct >= 10 ? '#f39c12' : '#e74c3c');
+                                            echo '<span style="font-weight:700;color:'.$color.'">' . pbi_e($v) . '%</span>';
+                                        } else {
+                                            echo pbi_e($v);
+                                        }
+                                    ?></td>
                                 <?php endforeach; ?>
                             </tr>
                             <?php endforeach; ?>
+                            <?php if (!empty($data['totais'])): ?>
+                            <tr style="font-weight:700;background:#f0f7ff;border-top:2px solid #3498db">
+                                <td><b>TOTAL</b></td>
+                                <?php foreach (array_slice($data['chaves'], 1) as $chave): ?>
+                                    <td><?php
+                                        $v = $data['totais'][$chave] ?? '';
+                                        if ($chave === 'taxa_conversao') {
+                                            echo pbi_e($v) . '%';
+                                        } else {
+                                            echo pbi_e($v);
+                                        }
+                                    ?></td>
+                                <?php endforeach; ?>
+                            </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

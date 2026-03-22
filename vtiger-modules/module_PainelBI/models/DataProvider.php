@@ -47,7 +47,7 @@ class PainelBI_DataProvider_Model {
             // Status e origem
             'leadstatus'     => ['label'=>'Status',        'type'=>'picklist', 'sql_s'=>"COALESCE(ld.leadstatus,'(sem status)')", 'sql_w'=>'ld.leadstatus', 'picklist'=>'vtiger_leadstatus',  'picklist_col'=>'leadstatus'],
             'leadsource'     => ['label'=>'Origem',        'type'=>'picklist', 'sql_s'=>"COALESCE(NULLIF(ld.leadsource,''),'Não informado')", 'sql_w'=>'ld.leadsource', 'picklist'=>'vtiger_leadsource', 'picklist_col'=>'leadsource'],
-            'converted'      => ['label'=>'Convertido',   'type'=>'integer',  'sql_s'=>'ld.converted',     'sql_w'=>'ld.converted'],
+            'converted'      => ['label'=>'Convertido',   'type'=>'picklist', 'sql_s'=>"CASE WHEN ld.converted=1 THEN 'Sim' ELSE 'Não' END", 'sql_w'=>'ld.converted', 'values'=>['Sim','Não']],
             // Atendente
             'atendente'      => ['label'=>'Atendente',    'type'=>'text',     'sql_s'=>"CONCAT(COALESCE(u.first_name,''),' ',COALESCE(u.last_name,''))", 'sql_w'=>'u.user_name', 'no_group'=>true],
             'user_name'      => ['label'=>'Login',        'type'=>'text',     'sql_s'=>'u.user_name',      'sql_w'=>'u.user_name'],
@@ -162,6 +162,12 @@ class PainelBI_DataProvider_Model {
     public function runReport(array $config): array {
         $tipo      = $config['tipo'] ?? 'detail';
         $modulo    = $config['modulo_base'] ?? 'Leads';
+
+        // Tipo especial: relatório de conversão
+        if ($tipo === 'conversion') {
+            return $this->runConversionReport($config);
+        }
+
         $colDefault= $modulo === 'Potentials' ? ['potentialname','sales_stage','amount','atendente','createdtime'] : ['nome_completo','leadstatus','atendente','createdtime'];
         $colunas   = $config['colunas'] ?? $colDefault;
         $grupo     = $tipo === 'summary' ? ($config['grupo'] ?? null) : null;
@@ -255,6 +261,68 @@ class PainelBI_DataProvider_Model {
             'dados'   => $rows,
             'total'   => count($rows),
             'sql_debug' => $sql, // remover em produção
+        ];
+    }
+
+    // ─── Relatório de conversão (tipo especial) ──────────────────────────────
+
+    private function runConversionReport(array $config): array {
+        $grupo      = $config['grupo'] ?? 'leadsource';
+        $condGrupos = $config['condicoes_grupos'] ?? [];
+        $ordemDir   = strtoupper($config['ordem_dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+        $limite     = min(max((int)($config['limite'] ?? 500), 1), 5000);
+
+        $fields = self::getLeadsFields();
+        $params = [];
+
+        // Determinar o campo de agrupamento
+        if (!isset($fields[$grupo])) {
+            $grupo = 'leadsource';
+        }
+        $f = $fields[$grupo];
+        $grupoSQL  = $f['sql_s'];
+        $grupoW    = $f['sql_w'];
+        $grupoLabel = $f['label'];
+
+        $from = $this->getLeadsFrom();
+        $condSQL = $this->buildConditionsSQL($condGrupos, $fields, $params);
+
+        $sql = "SELECT
+            {$grupoSQL} AS `grupo`,
+            COUNT(*) AS `total`,
+            SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) AS `convertidos`,
+            SUM(CASE WHEN ld.converted = 0 THEN 1 ELSE 0 END) AS `nao_convertidos`,
+            ROUND(SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS `taxa_conversao`
+        {$from}
+        {$condSQL}
+        GROUP BY {$grupoW}
+        ORDER BY `taxa_conversao` {$ordemDir}
+        LIMIT {$limite}";
+
+        $result = $this->adb->pquery($sql, $params);
+        $rows = [];
+        while ($row = $this->adb->fetch_array($result)) {
+            $rows[] = self::decodeRow($row);
+        }
+
+        // Linha de totais
+        $sqlTotal = "SELECT
+            COUNT(*) AS `total`,
+            SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) AS `convertidos`,
+            SUM(CASE WHEN ld.converted = 0 THEN 1 ELSE 0 END) AS `nao_convertidos`,
+            ROUND(SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) * 100.0 / GREATEST(COUNT(*),1), 1) AS `taxa_conversao`
+        {$from}
+        {$condSQL}";
+        $totalRow = self::decodeRow($this->adb->fetch_array($this->adb->pquery($sqlTotal, $params)));
+
+        return [
+            'tipo'    => 'conversion',
+            'chaves'  => ['grupo', 'total', 'convertidos', 'nao_convertidos', 'taxa_conversao'],
+            'labels'  => [$grupoLabel, 'Total Leads', 'Convertidos', 'Não Convertidos', 'Taxa (%)'],
+            'dados'   => $rows,
+            'totais'  => $totalRow,
+            'total'   => count($rows),
+            'sql_debug' => $sql,
         ];
     }
 

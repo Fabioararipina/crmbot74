@@ -300,14 +300,31 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
                 <tbody>
                     <?php foreach ($rows as $row):
                         $vals = array_values($row);
-                        $drillVal = $grupo ? ($row[$grupo] ?? ($vals[0] ?? '')) : '';
+                        $drillVal = $grupo ? ($row[$grupo] ?? ($row['grupo'] ?? ($vals[0] ?? ''))) : '';
                     ?>
                     <tr<?php if ($grupo): ?> style="cursor:pointer" onclick="pbiDrillDown(<?= htmlspecialchars(json_encode($grupo), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($drillVal), ENT_QUOTES) ?>, <?= htmlspecialchars(json_encode($modulo), ENT_QUOTES) ?>)"<?php endif; ?>>
                         <?php foreach ($data['chaves'] as $i => $chave): ?>
-                            <td><?= pbi_e(($row[$chave] ?? ($vals[$i] ?? ''))) ?></td>
+                            <td><?php
+                                $v = $row[$chave] ?? ($vals[$i] ?? '');
+                                if ($chave === 'taxa_conversao') {
+                                    $pct = (float)$v;
+                                    $color = $pct >= 20 ? '#27ae60' : ($pct >= 10 ? '#f39c12' : '#e74c3c');
+                                    echo '<span style="font-weight:700;color:'.$color.'">' . pbi_e($v) . '%</span>';
+                                } else {
+                                    echo pbi_e($v);
+                                }
+                            ?></td>
                         <?php endforeach; ?>
                     </tr>
                     <?php endforeach; ?>
+                    <?php if (!empty($data['totais'])): ?>
+                    <tr style="font-weight:700;background:#f0f7ff;border-top:2px solid #3498db">
+                        <td><b>TOTAL</b></td>
+                        <?php foreach (array_slice($data['chaves'], 1) as $chave): ?>
+                            <td><?= pbi_e($data['totais'][$chave] ?? '') ?><?= $chave === 'taxa_conversao' ? '%' : '' ?></td>
+                        <?php endforeach; ?>
+                    </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
             <?php if (count($data['dados']) > $maxRows): ?>
