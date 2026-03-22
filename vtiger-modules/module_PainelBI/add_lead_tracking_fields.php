@@ -64,11 +64,11 @@ if (isset($existentes['cf_lead_origem_id'])) {
 
     $db->query("INSERT INTO vtiger_field
         (tabid, columnname, tablename, generatedtype, uitype, fieldname, fieldlabel,
-         readonly, presence, selected, maximumlength, sequence, block, displaytype,
-         typeofdata, quickcreate, quicksequence, info_type, massupdate, helpinfo, summaryfield)
+         readonly, presence, maximumlength, sequence, block, displaytype,
+         typeofdata, quickcreate, quickcreatesequence, info_type, masseditable, helpinfo, summaryfield)
         VALUES
         ({$tabids['Leads']}, 'cf_lead_origem_id', 'vtiger_leadscf', 0, 1, 'cf_lead_origem_id', 'ID Lead Origem',
-         0, 2, 0, 255, {$nextSeq}, {$leadsBlockId}, 3,
+         0, 2, 255, {$nextSeq}, {$leadsBlockId}, 3,
          'V~O', 0, 0, 'BAS', 0, '', 0)");
 
     $leadFieldId = $db->insert_id;
@@ -102,11 +102,11 @@ if (isset($existentes['cf_origem_lead_id'])) {
 
     $db->query("INSERT INTO vtiger_field
         (tabid, columnname, tablename, generatedtype, uitype, fieldname, fieldlabel,
-         readonly, presence, selected, maximumlength, sequence, block, displaytype,
-         typeofdata, quickcreate, quicksequence, info_type, massupdate, helpinfo, summaryfield)
+         readonly, presence, maximumlength, sequence, block, displaytype,
+         typeofdata, quickcreate, quickcreatesequence, info_type, masseditable, helpinfo, summaryfield)
         VALUES
         ({$tabids['Contacts']}, 'cf_origem_lead_id', 'vtiger_contactscf', 0, 1, 'cf_origem_lead_id', 'ID Lead Origem',
-         0, 2, 0, 255, {$nextSeq2}, {$contactsBlockId}, 3,
+         0, 2, 255, {$nextSeq2}, {$contactsBlockId}, 3,
          'V~O', 0, 0, 'BAS', 0, '', 0)");
 
     $contactFieldId = $db->insert_id;
