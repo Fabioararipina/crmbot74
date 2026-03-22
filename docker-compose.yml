@@ -8,6 +8,7 @@ services:
       - MYSQL_DATABASE=vtiger
       - MYSQL_USER=vtiger
       - MYSQL_PASSWORD=${VTIGER_DB_PASS}
+      - VTIGER_DB_PASS=${VTIGER_DB_PASS}
     depends_on:
       - vtiger-db
     volumes:
