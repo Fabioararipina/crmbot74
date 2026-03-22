@@ -155,7 +155,7 @@ class PainelBI_Dashboard_View extends Vtiger_Index_View {
             <?php else: ?>
             <div class="row pbi-widget-row" id="pbi-widget-row">
                 <?php foreach ($widgets as $widget):
-                    $config     = json_decode($widget['config'] ?? '{}', true) ?? [];
+                    $config     = json_decode(html_entity_decode($widget['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? [];
                     $chartConfig= $config['chart'] ?? ['tipo' => 'bar'];
                     $data       = (new PainelBI_DataProvider_Model())->runReport($config);
                     $chartData  = PainelBI_DataProvider_Model::prepareChartData($chartConfig, $data);

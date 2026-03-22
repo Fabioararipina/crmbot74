@@ -27,7 +27,7 @@ class PainelBI_Construtor_View extends Vtiger_Index_View {
         $rel = $id ? $dp->getRelatorio($id) : null;
         if ($dup && $rel) { $rel['id'] = 0; $rel['titulo'] = 'Cópia de ' . $rel['titulo']; }
 
-        $config      = $rel ? (json_decode($rel['config'] ?? '{}', true) ?? []) : [];
+        $config      = $rel ? (json_decode(html_entity_decode($rel['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? []) : [];
         $chartConfig = $config['chart'] ?? ['tipo'=>'bar','campo_label'=>'','campos_dados'=>[],'mostrar_grid'=>true,'mostrar_label'=>true,'mostrar_legenda'=>true,'posicao_legenda'=>'top'];
         $condGrupos  = $config['condicoes_grupos'] ?? [['condicoes'=>[]]];
         $colunas     = $config['colunas'] ?? ['nome_completo','phone','leadstatus','atendente','createdtime'];

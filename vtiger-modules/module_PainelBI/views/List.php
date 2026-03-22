@@ -64,7 +64,7 @@ class PainelBI_List_View extends Vtiger_Index_View {
             <?php else: ?>
                 <div id="pbi-rel-list">
                     <?php foreach ($relatorios as $rel):
-                        $config = json_decode($rel['config'] ?? '{}', true) ?? [];
+                        $config = json_decode(html_entity_decode($rel['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? [];
                         $chart  = $config['chart'] ?? [];
                         $chartTipo = $chart['tipo'] ?? 'none';
                         $tipo      = $rel['tipo'] ?? 'summary';

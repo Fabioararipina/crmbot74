@@ -30,7 +30,7 @@ class PainelBI_Relatorio_View extends Vtiger_Index_View {
             return;
         }
 
-        $config      = json_decode($rel['config'] ?? '{}', true) ?? [];
+        $config      = json_decode(html_entity_decode($rel['config'] ?? '{}', ENT_QUOTES, 'UTF-8'), true) ?? [];
         $chartConfig = $config['chart'] ?? ['tipo' => 'bar'];
         $fields      = PainelBI_DataProvider_Model::getLeadsFields();
 
