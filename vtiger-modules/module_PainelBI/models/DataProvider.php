@@ -275,32 +275,35 @@ class PainelBI_DataProvider_Model {
         $fields = self::getLeadsFields();
         $params = [];
 
-        // Determinar o campo de agrupamento
         if (!isset($fields[$grupo])) {
             $grupo = 'leadsource';
         }
         $f = $fields[$grupo];
-        $grupoSQL  = $f['sql_s'];
-        $grupoW    = $f['sql_w'];
+        $grupoSQL   = $f['sql_s'];
+        $grupoW     = $f['sql_w'];
         $grupoLabel = $f['label'];
 
-        // Para conversão usamos FROM especial: inclui leads convertidos (deleted=1)
-        // pois o vTiger marca deleted=1 ao converter um lead via "Converter Lead"
+        // FROM inclui todos os leads (deleted=0) + join com contactscf pelo campo de rastreamento
+        // cf_origem_lead_id é preenchido quando o lead é convertido via "Converter Lead"
         $from = "FROM vtiger_leaddetails ld
         JOIN vtiger_crmentity e ON e.crmid = ld.leadid
             AND e.setype = 'Leads'
-            AND (e.deleted = 0 OR ld.converted = 1)
+            AND e.deleted = 0
         LEFT JOIN vtiger_leadaddress la ON la.leadaddressid = ld.leadid
-        LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0";
+        LEFT JOIN vtiger_users u ON u.id = e.smownerid AND u.deleted = 0
+        LEFT JOIN vtiger_contactscf cscf
+            ON cscf.cf_origem_lead_id = CAST(ld.leadid AS CHAR)
+            AND cscf.cf_origem_lead_id IS NOT NULL
+            AND cscf.cf_origem_lead_id != ''";
 
         $condSQL = $this->buildConditionsSQL($condGrupos, $fields, $params);
 
         $sql = "SELECT
             {$grupoSQL} AS `grupo`,
             COUNT(*) AS `total`,
-            SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) AS `convertidos`,
-            SUM(CASE WHEN ld.converted = 0 THEN 1 ELSE 0 END) AS `nao_convertidos`,
-            ROUND(SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS `taxa_conversao`
+            SUM(CASE WHEN cscf.contactid IS NOT NULL THEN 1 ELSE 0 END) AS `convertidos`,
+            SUM(CASE WHEN cscf.contactid IS NULL THEN 1 ELSE 0 END) AS `nao_convertidos`,
+            ROUND(SUM(CASE WHEN cscf.contactid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / GREATEST(COUNT(*), 1), 1) AS `taxa_conversao`
         {$from}
         {$condSQL}
         GROUP BY {$grupoW}
@@ -316,9 +319,9 @@ class PainelBI_DataProvider_Model {
         // Linha de totais
         $sqlTotal = "SELECT
             COUNT(*) AS `total`,
-            SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) AS `convertidos`,
-            SUM(CASE WHEN ld.converted = 0 THEN 1 ELSE 0 END) AS `nao_convertidos`,
-            ROUND(SUM(CASE WHEN ld.converted = 1 THEN 1 ELSE 0 END) * 100.0 / GREATEST(COUNT(*),1), 1) AS `taxa_conversao`
+            SUM(CASE WHEN cscf.contactid IS NOT NULL THEN 1 ELSE 0 END) AS `convertidos`,
+            SUM(CASE WHEN cscf.contactid IS NULL THEN 1 ELSE 0 END) AS `nao_convertidos`,
+            ROUND(SUM(CASE WHEN cscf.contactid IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / GREATEST(COUNT(*), 1), 1) AS `taxa_conversao`
         {$from}
         {$condSQL}";
         $totalRow = self::decodeRow($this->adb->fetch_array($this->adb->pquery($sqlTotal, $params)));
